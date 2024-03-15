@@ -1,6 +1,7 @@
 # WellnessWaveApi
 
 ### Folder Structure
+```plaintext
 /WellnessWaveApi
 │
 ├── cmd
@@ -40,3 +41,4 @@
     │   └── ...
     └── service2  # Tests specific to service2
         └── ...
+```
