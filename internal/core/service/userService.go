@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"../model"
+	"../repository"
 )
 
 // UserService defines the interface for user operations.
@@ -12,16 +13,14 @@ type UserService interface {
 }
 
 type userService struct {
-	// This is where you'd typically have a reference to the repository
+	userRepository repository.UserRepository
 }
 
 // NewUserService creates a new instance of the user service.
-func NewUserService() UserService {
-	return &userService{}
+func NewUserService(userRepo repository.UserRepository) UserService {
+	return &userService{userRepository: userRepo}
 }
 
 func (s *userService) AddUser(ctx context.Context, user model.User) error {
-	// Here you would call the repository to save the user to the database
-	// For now, we'll skip the database logic and return nil
-	return nil
+	return s.userRepository.Add(ctx, user)
 }
