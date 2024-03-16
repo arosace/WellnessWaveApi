@@ -10,16 +10,16 @@ import (
 
 // UserHandler handles HTTP requests for user operations.
 type UserHandler struct {
-	userService service.UserService
+	accountService service.AccountService
 }
 
 // NewUserHandler creates a new instance of UserHandler.
-func NewUserHandler(userService service.UserService) *UserHandler {
-	return &UserHandler{userService: userService}
+func NewUserHandler(accountService service.AccountService) *UserHandler {
+	return &UserHandler{accountService: accountService}
 }
 
 // HandleAddUser handles the POST request to add a new user.
-func (h *UserHandler) HandleAddUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request) {
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -27,7 +27,7 @@ func (h *UserHandler) HandleAddUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	if err := h.userService.AddUser(ctx, user); err != nil {
+	if err := h.accountService.AddAccount(ctx, user); err != nil {
 		http.Error(w, "Failed to add user", http.StatusInternalServerError)
 		return
 	}

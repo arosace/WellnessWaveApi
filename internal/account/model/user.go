@@ -1,7 +1,7 @@
 package model
 
-// User represents a user in the system.
-type User struct {
+// Account represents a user in the system.
+type Account struct {
 	ID    string `json:"id,omitempty"`
 	Name  string `json:"name"`
 	Email string `json:"email"`

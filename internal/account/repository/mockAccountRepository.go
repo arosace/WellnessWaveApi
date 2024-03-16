@@ -10,19 +10,19 @@ import (
 
 // MockUserRepository is a mock implementation of UserRepository that stores user data in memory.
 type MockUserRepository struct {
-	users map[string]model.User
+	users map[string]model.Account
 	mux   sync.RWMutex // ensures thread-safe access
 }
 
 // NewMockUserRepository creates a new instance of MockUserRepository.
 func NewMockUserRepository() *MockUserRepository {
 	return &MockUserRepository{
-		users: make(map[string]model.User),
+		users: make(map[string]model.Account),
 	}
 }
 
 // AddUser adds a new user to the repository.
-func (r *MockUserRepository) Add(ctx context.Context, user model.User) error {
+func (r *MockUserRepository) Add(ctx context.Context, user model.Account) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
@@ -35,7 +35,7 @@ func (r *MockUserRepository) Add(ctx context.Context, user model.User) error {
 }
 
 // FindByID returns a user by their ID.
-func (r *MockUserRepository) FindByID(ctx context.Context, id string) (*model.User, error) {
+func (r *MockUserRepository) FindByID(ctx context.Context, id string) (*model.Account, error) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
