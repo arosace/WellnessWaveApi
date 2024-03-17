@@ -96,7 +96,7 @@ func (h *AccountHandler) HandleAttachAccount(w http.ResponseWriter, r *http.Requ
 
 	if account == nil {
 		w.WriteHeader(http.StatusOK)
-	} else if account.ID == attachBody.ParentID {
+	} else {
 		w.WriteHeader(http.StatusCreated)
 	}
 }
