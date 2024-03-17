@@ -123,7 +123,7 @@ func TestAttachAccount(t *testing.T) {
 		mockRepo.On("FindByEmail", mockAttachBody.Email).Return(nil, errors.New("not_found"))
 		mockRepo.On("Add", mock.Anything).Return(&mockAccount, nil)
 
-		err := accountService.AttachAccount(context.Background(), mockAttachBody)
+		_, err := accountService.AttachAccount(context.Background(), mockAttachBody)
 
 		assert.NoError(t, err)
 		mockRepo.AssertExpectations(t)
@@ -144,7 +144,7 @@ func TestAttachAccount(t *testing.T) {
 		mockRepo.On("FindByID", mockAttachBody.ParentID).Return(&mockParent, nil)
 		mockRepo.On("FindByEmail", mockAttachBody.Email).Return(&mockAccount, nil)
 
-		err := accountService.AttachAccount(context.Background(), mockAttachBody)
+		_, err := accountService.AttachAccount(context.Background(), mockAttachBody)
 
 		assert.Error(t, err)
 		assert.ErrorContains(t, err, "another")
@@ -165,7 +165,7 @@ func TestAttachAccount(t *testing.T) {
 		mockRepo.On("FindByID", mockAttachBody.ParentID).Return(&mockParent, nil)
 		mockRepo.On("FindByEmail", mockAttachBody.Email).Return(&mockAccount, nil)
 
-		err := accountService.AttachAccount(context.Background(), mockAttachBody)
+		_, err := accountService.AttachAccount(context.Background(), mockAttachBody)
 
 		assert.Nil(t, err)
 	})
@@ -186,7 +186,7 @@ func TestAttachAccount(t *testing.T) {
 		mockRepo.On("FindByEmail", mockAttachBody.Email).Return(&mockAccount, nil)
 		mockRepo.On("Update", mock.Anything).Return(&mockAccount, nil)
 
-		err := accountService.AttachAccount(context.Background(), mockAttachBody)
+		_, err := accountService.AttachAccount(context.Background(), mockAttachBody)
 
 		assert.Nil(t, err)
 	})
@@ -207,7 +207,7 @@ func TestAttachAccount(t *testing.T) {
 		mockRepo.On("FindByEmail", mockAttachBody.Email).Return(&mockAccount, nil)
 		mockRepo.On("Update", mock.Anything).Return(nil, errors.New("err"))
 
-		err := accountService.AttachAccount(context.Background(), mockAttachBody)
+		_, err := accountService.AttachAccount(context.Background(), mockAttachBody)
 
 		assert.Error(t, err)
 	})
@@ -223,8 +223,26 @@ func TestAttachAccount(t *testing.T) {
 			ParentID:  "parent123",
 		}
 		mockRepo.On("FindByID", mockAttachBody.ParentID).Return(nil, errors.New("not_found"))
-		err := accountService.AttachAccount(context.Background(), mockAttachBody)
+		_, err := accountService.AttachAccount(context.Background(), mockAttachBody)
 
 		assert.Error(t, err)
+	})
+
+	t.Run("when parent account exits and has the same email of account to attach, return error", func(t *testing.T) {
+		mockRepo := new(MockAccountRepository)
+		mockEncryptor := new(MockEncryptor)
+		accountService := NewAccountService(mockRepo, mockEncryptor)
+		mockAttachBody := model.AttachAccountBody{
+			FirstName: "John",
+			LastName:  "Doe",
+			Email:     "john.doe@example.com",
+			ParentID:  "parent123",
+		}
+		mockParent := model.Account{Role: domain.PatientRole, ID: "parent123", Email: "john.doe@example.com"}
+		mockRepo.On("FindByID", mockAttachBody.ParentID).Return(&mockParent, nil)
+		_, err := accountService.AttachAccount(context.Background(), mockAttachBody)
+
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "itself")
 	})
 }

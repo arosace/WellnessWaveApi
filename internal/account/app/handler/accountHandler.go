@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
@@ -31,7 +32,7 @@ func (h *AccountHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := account.ValidateHealthSpecialist(); err != nil {
+	if err := account.ValidateModel(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -87,10 +88,15 @@ func (h *AccountHandler) HandleAttachAccount(w http.ResponseWriter, r *http.Requ
 	}
 
 	ctx := r.Context()
-	if err := h.accountService.AttachAccount(ctx, attachBody); err != nil {
-		http.Error(w, "Failed to attach account", http.StatusInternalServerError)
+	account, err := h.accountService.AttachAccount(ctx, attachBody)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to attach account: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	if account == nil {
+		w.WriteHeader(http.StatusOK)
+	} else if account.ID == attachBody.ParentID {
+		w.WriteHeader(http.StatusCreated)
+	}
 }

@@ -8,11 +8,11 @@ import (
 )
 
 type AttachAccountBody struct {
-	FirstName string
-	LastName  string
-	Role      string
-	Email     string
-	ParentID  string
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Role      string `json:"role"`
+	Email     string `json:"email"`
+	ParentID  string `json:"parent_id"`
 }
 
 func (m *AttachAccountBody) ValidateModel() error {

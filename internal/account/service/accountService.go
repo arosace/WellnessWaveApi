@@ -16,7 +16,7 @@ type AccountService interface {
 	GetAccounts(ctx context.Context) ([]*model.Account, error)
 	GetAccountByEmail(ctx context.Context, email string) (*model.Account, error)
 	CheckAccountExists(ctx context.Context, email string) bool
-	AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) error
+	AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error)
 }
 
 type accountService struct {
@@ -53,27 +53,32 @@ func (s *accountService) CheckAccountExists(ctx context.Context, email string) b
 	return true
 }
 
-func (s *accountService) AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) error {
+func (s *accountService) AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error) {
 	var account *model.Account
 
 	//check if parentAccount exists
-	_, err := s.GetAccountByID(ctx, accountToAttach.ParentID)
+	parent, err := s.GetAccountByID(ctx, accountToAttach.ParentID)
 	if err != nil {
 		if err.Error() == "not_found" {
-			return errors.New("parent account not found")
+			return nil, errors.New("parent account not found")
 		}
-		return err
+		return nil, err
+	}
+
+	//one should not be able to attach to themselves
+	if parent.Email == accountToAttach.Email {
+		return nil, errors.New("cannot attach account to itself")
 	}
 
 	//check if accountToAttach exists
 	account, err = s.GetAccountByEmail(ctx, accountToAttach.Email)
 	if err != nil && err.Error() != "not_found" {
-		return err
+		return nil, err
 	}
 	//if it does not exist create account and attach
 	//account will be created without password, for now it's just for record
 	if account == nil {
-		_, err := s.accountRepository.Add(ctx, model.Account{
+		newAccount, err := s.accountRepository.Add(ctx, model.Account{
 			FirstName: accountToAttach.FirstName,
 			LastName:  accountToAttach.LastName,
 			Email:     accountToAttach.Email,
@@ -81,24 +86,25 @@ func (s *accountService) AttachAccount(ctx context.Context, accountToAttach mode
 			ParentID:  accountToAttach.ParentID,
 		})
 		if err != nil {
-			return err
+			return nil, err
 		}
+		return newAccount, nil
 		// send patient account created event
 	} else { //if it exists
 		if account.ParentID != "" && account.ParentID != accountToAttach.ParentID { //if it is already attached return error
-			return errors.New("cannot attach an account that is already attached to another")
+			return nil, errors.New("cannot attach an account that is already attached to another")
 		} else if account.ParentID == accountToAttach.ParentID { //is account is already attached to right health specialist
-			return nil
+			return nil, nil
 		} else { //if it is not already attached update it
 			account.ParentID = accountToAttach.ParentID
 			_, err := s.accountRepository.Update(ctx, account)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			// send patient account updated event
 		}
 	}
-	return nil
+	return account, nil
 }
 
 func (s *accountService) GetAccountByEmail(ctx context.Context, email string) (*model.Account, error) {

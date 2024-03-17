@@ -41,12 +41,12 @@ func (s *mockAccountService) GetAccounts(ctx context.Context) ([]*model.Account,
 	return args.Get(0).([]*model.Account), nil
 }
 
-func (s *mockAccountService) AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) error {
+func (s *mockAccountService) AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error) {
 	args := s.Called(accountToAttach)
-	if args.Get(0) != nil {
-		return args.Error(0)
+	if args.Get(1) != nil {
+		return nil, args.Error(1)
 	}
-	return nil
+	return args.Get(0).(*model.Account), nil
 }
 
 func (s *mockAccountService) GetAccountByEmail(ctx context.Context, email string) (*model.Account, error) {
@@ -111,7 +111,7 @@ func TestHandleAddAccount(t *testing.T) {
 			FirstName: "Name",
 			LastName:  "Surname",
 			Email:     "test@example.com",
-			Role:      "role",
+			Role:      domain.HhealthSpecialistRole,
 			Password:  "[]",
 		}
 		userJSON, _ := json.Marshal(testUser)
@@ -138,7 +138,7 @@ func TestHandleAddAccount(t *testing.T) {
 			FirstName: "Name",
 			LastName:  "Surname",
 			Email:     "test@example.com",
-			Role:      "role",
+			Role:      domain.HhealthSpecialistRole,
 			Password:  "[]",
 		}
 		userJSON, _ := json.Marshal(testUser)
@@ -305,7 +305,7 @@ func TestHandleAttachAccount(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		mockService.On("AttachAccount", account).Return(errors.New("service error"))
+		mockService.On("AttachAccount", mock.Anything).Return(nil, errors.New("service error"))
 
 		rr := httptest.NewRecorder()
 		handler.HandleAttachAccount(rr, req)
@@ -331,7 +331,7 @@ func TestHandleAttachAccount(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		mockService.On("AttachAccount", account).Return(nil)
+		mockService.On("AttachAccount", mock.Anything).Return(&model.Account{}, nil)
 
 		rr := httptest.NewRecorder()
 		handler.HandleAttachAccount(rr, req)
