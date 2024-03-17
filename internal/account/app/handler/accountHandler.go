@@ -31,7 +31,7 @@ func (h *AccountHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := account.ValidateModel(); err != nil {
+	if err := account.ValidateHealthSpecialist(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -43,7 +43,7 @@ func (h *AccountHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := h.accountService.AddAccount(ctx, account); err != nil {
+	if _, err := h.accountService.AddAccount(ctx, account); err != nil {
 		http.Error(w, "Failed to add user", http.StatusInternalServerError)
 		return
 	}
@@ -67,4 +67,30 @@ func (h *AccountHandler) HandleGetAccounts(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(accounts)
+}
+
+func (h *AccountHandler) HandleAttachAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var attachBody model.AttachAccountBody
+	if err := json.NewDecoder(r.Body).Decode(&attachBody); err != nil {
+		http.Error(w, "wrong_data_type", http.StatusBadRequest)
+		return
+	}
+
+	if err := attachBody.ValidateModel(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	if err := h.accountService.AttachAccount(ctx, attachBody); err != nil {
+		http.Error(w, "Failed to attach account", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

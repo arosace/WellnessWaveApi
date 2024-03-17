@@ -7,6 +7,7 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/app/handler"
 	"github.com/arosace/WellnessWaveApi/internal/account/repository"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
+	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
 )
 
 // ServiceSetup holds all the services and their handlers for the application.
@@ -29,11 +30,15 @@ func main() {
 
 // initializeServices sets up all the services, repositories, and handlers.
 func initializeServices() ServiceSetup {
+	encryptor := &encryption.Encryptor{
+		Passphrase: "randompassphraseof32bytes1234567",
+	}
+
 	// Initialize all repositories
 	accountRepo := repository.NewMockAccountRepository()
 
 	// Initialize all services with their respective repositories
-	accountService := service.NewAccountService(accountRepo)
+	accountService := service.NewAccountService(accountRepo, encryptor)
 
 	// Initialize all handlers with their respective services
 	accountServiceHandler := handler.NewAccountHandler(accountService)
@@ -47,4 +52,5 @@ func initializeServices() ServiceSetup {
 func registerEndpoints(services ServiceSetup) {
 	http.HandleFunc("/accounts/register", services.AccountServiceHandler.HandleAddAccount)
 	http.HandleFunc("/accounts", services.AccountServiceHandler.HandleGetAccounts)
+	http.HandleFunc("/accounts/attach", services.AccountServiceHandler.HandleAttachAccount)
 }

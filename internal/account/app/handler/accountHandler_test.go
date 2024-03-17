@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 
 	"github.com/stretchr/testify/assert"
@@ -19,12 +20,12 @@ type mockAccountService struct {
 	mock.Mock
 }
 
-func (s *mockAccountService) AddAccount(ctx context.Context, account model.Account) error {
+func (s *mockAccountService) AddAccount(ctx context.Context, account model.Account) (*model.Account, error) {
 	args := s.Called(account)
 	if args.Get(1) != nil {
-		return args.Error(1)
+		return nil, args.Error(1)
 	}
-	return args.Error(0)
+	return args.Get(0).(*model.Account), nil
 }
 
 func (s *mockAccountService) CheckAccountExists(ctx context.Context, email string) bool {
@@ -32,12 +33,28 @@ func (s *mockAccountService) CheckAccountExists(ctx context.Context, email strin
 	return args.Bool(0)
 }
 
-func (s *mockAccountService) GetAccounts(ctx context.Context) ([]model.Account, error) {
+func (s *mockAccountService) GetAccounts(ctx context.Context) ([]*model.Account, error) {
 	args := s.Called()
 	if args.Get(1) != nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]model.Account), nil
+	return args.Get(0).([]*model.Account), nil
+}
+
+func (s *mockAccountService) AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) error {
+	args := s.Called(accountToAttach)
+	if args.Get(0) != nil {
+		return args.Error(0)
+	}
+	return nil
+}
+
+func (s *mockAccountService) GetAccountByEmail(ctx context.Context, email string) (*model.Account, error) {
+	args := s.Called(email)
+	if args.Get(1) != nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Account), nil
 }
 
 func TestHandleAddAccount(t *testing.T) {
@@ -166,7 +183,7 @@ func TestHandleGetAccounts(t *testing.T) {
 		mockService := &mockAccountService{}
 		handler := NewAccountHandler(mockService)
 
-		testAccounts := []model.Account{
+		testAccounts := []*model.Account{
 			{ID: "1", FirstName: "Test", LastName: "User", Email: "test@example.com"},
 			// Add more test accounts as needed
 		}
@@ -176,7 +193,7 @@ func TestHandleGetAccounts(t *testing.T) {
 		handler.HandleGetAccounts(rr, req)
 
 		assert.Equal(t, http.StatusOK, rr.Code)
-		var accounts []model.Account
+		var accounts []*model.Account
 		err = json.NewDecoder(rr.Body).Decode(&accounts)
 		assert.NoError(t, err)
 		assert.Equal(t, testAccounts, accounts)
@@ -196,5 +213,129 @@ func TestHandleGetAccounts(t *testing.T) {
 		handler.HandleGetAccounts(rr, req)
 
 		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	})
+}
+
+func TestHandleAttachAccount(t *testing.T) {
+	t.Run("when non-POST method is used, return method not allowed", func(t *testing.T) {
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+
+		req, err := http.NewRequest(http.MethodGet, "/accounts/attach", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		handler.HandleAttachAccount(rr, req)
+
+		assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	})
+
+	t.Run("when wrong body is sent, return bad request", func(t *testing.T) {
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		req, err := http.NewRequest(http.MethodPost, "/accounts/attach", bytes.NewBufferString("invalid body"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		handler.HandleAttachAccount(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		assert.Contains(t, rr.Body.String(), "wrong_data_type")
+	})
+
+	t.Run("when data is invalid, return bad request", func(t *testing.T) {
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		account := model.AttachAccountBody{}
+		body, _ := json.Marshal(account)
+
+		req, err := http.NewRequest(http.MethodPost, "/accounts/attach", bytes.NewBuffer(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		handler.HandleAttachAccount(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		assert.Contains(t, rr.Body.String(), "missing_data: email")
+	})
+
+	t.Run("when role is invalid, return bad request", func(t *testing.T) {
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		account := model.AttachAccountBody{
+			Role:      "invalid",
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "email",
+			ParentID:  "id",
+		}
+		body, _ := json.Marshal(account)
+
+		req, err := http.NewRequest(http.MethodPost, "/accounts/attach", bytes.NewBuffer(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		handler.HandleAttachAccount(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		assert.Contains(t, rr.Body.String(), "invalid_role")
+	})
+	t.Run("when account service returns an error, return internal server error", func(t *testing.T) {
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		account := model.AttachAccountBody{
+			Role:      domain.PatientRole,
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "email",
+			ParentID:  "id",
+		}
+		body, _ := json.Marshal(account)
+
+		req, err := http.NewRequest(http.MethodPost, "/attachAccount", bytes.NewBuffer(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mockService.On("AttachAccount", account).Return(errors.New("service error"))
+
+		rr := httptest.NewRecorder()
+		handler.HandleAttachAccount(rr, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		assert.Contains(t, rr.Body.String(), "Failed to attach account")
+	})
+
+	t.Run("successful account attachment", func(t *testing.T) {
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		account := model.AttachAccountBody{
+			Role:      domain.PatientRole,
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "email",
+			ParentID:  "id",
+		}
+		body, _ := json.Marshal(account)
+
+		req, err := http.NewRequest(http.MethodPost, "/attachAccount", bytes.NewBuffer(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mockService.On("AttachAccount", account).Return(nil)
+
+		rr := httptest.NewRecorder()
+		handler.HandleAttachAccount(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
 	})
 }

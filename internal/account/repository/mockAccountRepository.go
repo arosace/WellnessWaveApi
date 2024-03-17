@@ -12,19 +12,18 @@ import (
 
 // MockUserRepository is a mock implementation of UserRepository that stores user data in memory.
 type MockAccountRepository struct {
-	accounts map[string]model.Account
+	accounts map[string]*model.Account
 	mux      sync.RWMutex // ensures thread-safe access
 }
 
 // NewMockUserRepository creates a new instance of MockUserRepository.
 func NewMockAccountRepository() *MockAccountRepository {
 	return &MockAccountRepository{
-		accounts: make(map[string]model.Account),
+		accounts: make(map[string]*model.Account),
 	}
 }
 
-// AddUser adds a new user to the repository.
-func (r *MockAccountRepository) Add(ctx context.Context, user model.Account) error {
+func (r *MockAccountRepository) Add(ctx context.Context, user model.Account) (*model.Account, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
@@ -35,15 +34,15 @@ func (r *MockAccountRepository) Add(ctx context.Context, user model.Account) err
 	randomIntegerStr := strconv.Itoa(randomInteger)
 
 	user.ID = randomIntegerStr
-	r.accounts[user.Email] = user
-	return nil
+	r.accounts[user.Email] = &user
+	return &user, nil
 }
 
-func (r *MockAccountRepository) List(ctx context.Context) ([]model.Account, error) {
+func (r *MockAccountRepository) List(ctx context.Context) ([]*model.Account, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
-	var accounts []model.Account
+	var accounts []*model.Account
 	for _, a := range r.accounts {
 		accounts = append(accounts, a)
 	}
@@ -56,12 +55,15 @@ func (r *MockAccountRepository) FindByID(ctx context.Context, id string) (*model
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	user, exists := r.accounts[id]
-	if !exists {
-		return nil, errors.New("account not found")
+	var user *model.Account
+	for _, a := range r.accounts {
+		if a.ID == id {
+			user = a
+			return user, nil
+		}
 	}
 
-	return &user, nil
+	return nil, errors.New("not_found")
 }
 
 // FindByEmail returns a user by their email.
@@ -71,8 +73,15 @@ func (r *MockAccountRepository) FindByEmail(ctx context.Context, email string) (
 
 	user, exists := r.accounts[email]
 	if !exists {
-		return nil, errors.New("account not found")
+		return nil, errors.New("not_found")
 	}
 
-	return &user, nil
+	return user, nil
+}
+
+func (r *MockAccountRepository) Update(ctx context.Context, user *model.Account) (*model.Account, error) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	r.accounts[user.Email] = user
+	return user, nil
 }
