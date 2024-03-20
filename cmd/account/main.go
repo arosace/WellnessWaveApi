@@ -8,6 +8,7 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/repository"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
+	"github.com/gorilla/mux"
 )
 
 // ServiceSetup holds all the services and their handlers for the application.
@@ -50,7 +51,9 @@ func initializeServices() ServiceSetup {
 }
 
 func registerEndpoints(services ServiceSetup) {
-	http.HandleFunc("/accounts/register", services.AccountServiceHandler.HandleAddAccount)
-	http.HandleFunc("/accounts", services.AccountServiceHandler.HandleGetAccounts)
-	http.HandleFunc("/accounts/attach", services.AccountServiceHandler.HandleAttachAccount)
+	r := mux.NewRouter()
+	r.HandleFunc("/accounts/register", services.AccountServiceHandler.HandleAddAccount)
+	r.HandleFunc("/accounts", services.AccountServiceHandler.HandleGetAccounts)
+	r.HandleFunc("/accounts/attach", services.AccountServiceHandler.HandleAttachAccount)
+	r.HandleFunc("/accounts/{parent_id}", services.AccountServiceHandler.HandleGetAttachedAccounts)
 }

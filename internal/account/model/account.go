@@ -11,12 +11,12 @@ import (
 // Account represents a user in the system.
 type Account struct {
 	ID        string `json:"id,omitempty"`
+	ParentID  string `json:"parent_id"`
+	Role      string `json:"role"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
-	Role      string `json:"role"`
 	Password  string `json:"password"`
-	ParentID  string `json:"parent_id"`
 }
 
 func (m *Account) ValidateModel() error {

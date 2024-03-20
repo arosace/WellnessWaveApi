@@ -85,3 +85,17 @@ func (r *MockAccountRepository) Update(ctx context.Context, user *model.Account)
 	r.accounts[user.Email] = user
 	return user, nil
 }
+
+func (r *MockAccountRepository) FindByParentID(ctx context.Context, parentId string) ([]*model.Account, error) {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	var accounts []*model.Account
+	for _, a := range r.accounts {
+		if a.ParentID == parentId {
+			accounts = append(accounts, a)
+		}
+	}
+
+	return accounts, nil
+}

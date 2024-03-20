@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
+	"github.com/arosace/WellnessWaveApi/pkg/utils"
+	"github.com/gorilla/mux"
 )
 
 // UserHandler handles HTTP requests for user operations.
@@ -99,4 +102,35 @@ func (h *AccountHandler) HandleAttachAccount(w http.ResponseWriter, r *http.Requ
 	} else {
 		w.WriteHeader(http.StatusCreated)
 	}
+}
+
+func (h *AccountHandler) HandleGetAttachedAccounts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	vars := mux.Vars(r)
+	fmt.Println(vars)
+	requestParams := utils.GetHTTPVars(r)
+	parentId := requestParams["parent_id"]
+	if parentId == "" {
+		http.Error(w, "parameter parent_id is missing", http.StatusBadRequest)
+		return
+	}
+	if _, err := strconv.ParseInt(parentId, 10, 32); err != nil {
+		http.Error(w, "unexpected http parameter", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	attachedAccounts, err := h.accountService.GetAttachedAccounts(ctx, parentId)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get accounts attached to account (%s): %v", parentId, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(attachedAccounts)
 }

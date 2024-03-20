@@ -11,6 +11,7 @@ import (
 
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
+	"github.com/gorilla/mux"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -55,6 +56,14 @@ func (s *mockAccountService) GetAccountByEmail(ctx context.Context, email string
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*model.Account), nil
+}
+
+func (s *mockAccountService) GetAttachedAccounts(ctx context.Context, parentId string) ([]*model.Account, error) {
+	args := s.Called(parentId)
+	if args.Get(1) != nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.Account), nil
 }
 
 func TestHandleAddAccount(t *testing.T) {
@@ -335,6 +344,85 @@ func TestHandleAttachAccount(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		handler.HandleAttachAccount(rr, req)
+
+		assert.Equal(t, http.StatusCreated, rr.Code)
+	})
+}
+
+func TestHandleGetAttachedAccounts(t *testing.T) {
+	t.Run("when non-GET method is used, return method not allowed", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		req, err := http.NewRequest("POST", "/accounts/parent_id", nil) // Using POST instead of GET
+		if err != nil {
+			t.Fatal(err)
+		}
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		handler.HandleGetAccounts(rr, req)
+
+		assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	})
+
+	t.Run("when parentID is missing, return bad request code", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		req, err := http.NewRequest("GET", "/accounts/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		handler.HandleGetAttachedAccounts(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+	t.Run("when unexpected parameter is passed, return bad request code", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		router := mux.NewRouter()
+		req, err := http.NewRequest("GET", "/accounts/parent_id", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		router.HandleFunc("/accounts/{parent_id}", handler.HandleGetAttachedAccounts)
+		router.ServeHTTP(rr, req)
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("when service fails to get accounts, return internal server error", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		router := mux.NewRouter()
+		req, err := http.NewRequest("GET", "/accounts/123", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+
+		mockService.On("GetAttachedAccounts", mock.Anything).Return(nil, errors.New("internal error"))
+
+		router.HandleFunc("/accounts/{parent_id}", handler.HandleGetAttachedAccounts)
+		router.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	})
+
+	t.Run("when get request is successfull, return list of attached accounts", func(t *testing.T) {
+		rr := httptest.NewRecorder()
+		router := mux.NewRouter()
+		req, err := http.NewRequest("GET", "/accounts/123", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+
+		mockService.On("GetAttachedAccounts", mock.Anything).Return([]*model.Account{
+			{ID: "1"}, {ID: "1"},
+		}, nil)
+
+		router.HandleFunc("/accounts/{parent_id}", handler.HandleGetAttachedAccounts)
+		router.ServeHTTP(rr, req)
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 	})

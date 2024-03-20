@@ -44,6 +44,14 @@ func (m *MockAccountRepository) FindByID(ctx context.Context, id string) (*model
 	return args.Get(0).(*model.Account), nil
 }
 
+func (m *MockAccountRepository) FindByParentID(ctx context.Context, parentId string) ([]*model.Account, error) {
+	args := m.Called(parentId)
+	if args.Get(1) != nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*model.Account), nil
+}
+
 func (m *MockAccountRepository) Update(ctx context.Context, account *model.Account) (*model.Account, error) {
 	args := m.Called(account)
 	if args.Get(1) != nil {

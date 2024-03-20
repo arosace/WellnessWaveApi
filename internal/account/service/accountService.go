@@ -14,6 +14,7 @@ import (
 type AccountService interface {
 	AddAccount(ctx context.Context, account model.Account) (*model.Account, error)
 	GetAccounts(ctx context.Context) ([]*model.Account, error)
+	GetAttachedAccounts(ctx context.Context, parentId string) ([]*model.Account, error)
 	GetAccountByEmail(ctx context.Context, email string) (*model.Account, error)
 	CheckAccountExists(ctx context.Context, email string) bool
 	AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error)
@@ -121,4 +122,8 @@ func (s *accountService) GetAccountByID(ctx context.Context, id string) (*model.
 		return nil, err
 	}
 	return account, nil
+}
+
+func (s *accountService) GetAttachedAccounts(ctx context.Context, parentId string) ([]*model.Account, error) {
+	return s.accountRepository.FindByParentID(ctx, parentId)
 }

@@ -13,4 +13,5 @@ type AccountRepository interface {
 	List(ctx context.Context) ([]*model.Account, error)
 	FindByID(ctx context.Context, id string) (*model.Account, error)
 	FindByEmail(ctx context.Context, email string) (*model.Account, error)
+	FindByParentID(ctx context.Context, parentId string) ([]*model.Account, error)
 }
