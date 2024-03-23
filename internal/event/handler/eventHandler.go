@@ -46,29 +46,33 @@ func (h *EventHandler) HandleScheduleEvent(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusCreated)
 }
 
-/*func (h *EventHandler) HandleGetEventsByHealthSpecialistId(w http.ResponseWriter, r *http.Request) {
+func (h *EventHandler) HandleGetEventsByHealthSpecialistId(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	healthSpecialistID := r.URL.Query().Get("healthSpecialistId")
-	if healthSpecialistID == "" {
+	healthSpecialistId := r.URL.Query().Get("healthSpecialistId")
+	if healthSpecialistId == "" {
 		http.Error(w, "healthSpecialistId is required", http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
-	events, err := h.eventService.GetEventsByHealthSpecialistID(ctx, healthSpecialistID)
+	events, err := h.eventService.GetEventsByHealthSpecialistId(ctx, healthSpecialistId)
 	if err != nil {
 		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(events); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	if len(events) == 0 {
+		http.Error(w, fmt.Sprintf("no events found for health specialist [%s]", healthSpecialistId), http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-}*/
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(events); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+}
