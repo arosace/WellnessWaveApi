@@ -39,6 +39,11 @@ func (m *mockEventService) GetEventsByPatientId(ctx context.Context, id string) 
 	return args.Get(0).([]*model.Event), args.Error(1)
 }
 
+func (m *mockEventService) RescheduleEvent(ctx context.Context, rescheduleRequest model.RescheduleRequest) (*model.Event, error) {
+	args := m.Called(rescheduleRequest)
+	return args.Get(0).(*model.Event), args.Error(1)
+}
+
 func TestHandleScheduleEvent(t *testing.T) {
 	mockEventService := &mockEventService{}
 	handler := &EventHandler{eventService: mockEventService}
@@ -172,6 +177,59 @@ func TestHandleGetEventsById(t *testing.T) {
 		err := json.NewDecoder(rr.Body).Decode(&returnedEvents)
 		assert.NoError(t, err)
 		assert.Equal(t, len(returnedEvents), 1)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestHandleRescheduleEvent(t *testing.T) {
+	mockService := &mockEventService{}
+	handler := &EventHandler{eventService: mockService}
+
+	t.Run("HTTP Method Not Allowed", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil) // Using GET instead of PATCH
+		rr := httptest.NewRecorder()
+		handler.HandleRescheduleEvent(rr, req)
+		assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	})
+
+	t.Run("Invalid request body", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodPatch, "/", bytes.NewBufferString("invalid json"))
+		rr := httptest.NewRecorder()
+		handler.HandleRescheduleEvent(rr, req)
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("Model Validation Failure", func(t *testing.T) {
+		body := bytes.NewBufferString(`{"eventID":"", "newDate":""}`)
+		req, _ := http.NewRequest(http.MethodPatch, "/", body)
+		rr := httptest.NewRecorder()
+		handler.HandleRescheduleEvent(rr, req)
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("Failed to reschedule event", func(t *testing.T) {
+		validRequestBody := model.RescheduleRequest{EventID: "123", NewDate: "2023-01-01T15:00:00Z"} // Example of a valid request body
+		requestBodyBytes, _ := json.Marshal(validRequestBody)
+		req, _ := http.NewRequest(http.MethodPatch, "/", bytes.NewBuffer(requestBodyBytes))
+		rr := httptest.NewRecorder()
+
+		mockService.On("RescheduleEvent", validRequestBody).Return(&model.Event{}, errors.New("service error")).Once()
+
+		handler.HandleRescheduleEvent(rr, req)
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("Successful Rescheduling", func(t *testing.T) {
+		validRequestBody := model.RescheduleRequest{EventID: "123", NewDate: "2023-01-01T15:00:00Z"}
+		requestBodyBytes, _ := json.Marshal(validRequestBody)
+		req, _ := http.NewRequest(http.MethodPatch, "/", bytes.NewBuffer(requestBodyBytes))
+		rr := httptest.NewRecorder()
+
+		mockService.On("RescheduleEvent", validRequestBody).Return(&model.Event{}, nil).Once()
+
+		handler.HandleRescheduleEvent(rr, req)
+		assert.Equal(t, http.StatusOK, rr.Code)
 		mockService.AssertExpectations(t)
 	})
 }

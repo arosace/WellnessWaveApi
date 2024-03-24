@@ -65,6 +65,33 @@ func (h *EventHandler) HandleGetEvents(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Missing required query parameter", http.StatusBadRequest)
 }
 
+func (h *EventHandler) HandleRescheduleEvent(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var rescheduleRequest model.RescheduleRequest
+	if err := json.NewDecoder(r.Body).Decode(&rescheduleRequest); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := rescheduleRequest.ValidateModel(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, err := h.eventService.RescheduleEvent(ctx, rescheduleRequest)
+	if err != nil {
+		http.Error(w, "Failed to reschedule event", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *EventHandler) getEventsByHealthSpecialistId(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
 	events, err := h.eventService.GetEventsByHealthSpecialistId(ctx, id)

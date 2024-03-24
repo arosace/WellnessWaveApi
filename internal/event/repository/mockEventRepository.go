@@ -56,3 +56,13 @@ func (r *MockEventRepository) GetByPatientId(ctx context.Context, patientId stri
 	}
 	return events, nil
 }
+
+func (r *MockEventRepository) Update(ctx context.Context, rescheduleRequest model.RescheduleRequest) (*model.Event, error) {
+	var event *model.Event
+	for _, event := range r.events {
+		if event.ID == rescheduleRequest.EventID {
+			event.EventDate = rescheduleRequest.NewDate
+		}
+	}
+	return event, nil
+}

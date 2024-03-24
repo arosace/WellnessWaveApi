@@ -11,6 +11,7 @@ type EventService interface {
 	ScheduleEvent(context.Context, model.Event) (*model.Event, error)
 	GetEventsByHealthSpecialistId(context.Context, string) ([]*model.Event, error)
 	GetEventsByPatientId(context.Context, string) ([]*model.Event, error)
+	RescheduleEvent(context.Context, model.RescheduleRequest) (*model.Event, error)
 }
 
 type eventService struct {
@@ -33,4 +34,8 @@ func (e *eventService) GetEventsByHealthSpecialistId(ctx context.Context, health
 
 func (e *eventService) GetEventsByPatientId(ctx context.Context, patientId string) ([]*model.Event, error) {
 	return e.eventRepository.GetByPatientId(ctx, patientId)
+}
+
+func (e *eventService) RescheduleEvent(ctx context.Context, rescheduleRequest model.RescheduleRequest) (*model.Event, error) {
+	return e.eventRepository.Update(ctx, rescheduleRequest)
 }
