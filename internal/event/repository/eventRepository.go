@@ -9,4 +9,5 @@ import (
 type EventRepository interface {
 	Add(ctx context.Context, event model.Event) (*model.Event, error)
 	GetByHealthSpecialistId(context.Context, string) ([]*model.Event, error)
+	GetByPatientId(context.Context, string) ([]*model.Event, error)
 }

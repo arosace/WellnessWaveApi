@@ -46,33 +46,53 @@ func (h *EventHandler) HandleScheduleEvent(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *EventHandler) HandleGetEventsByHealthSpecialistId(w http.ResponseWriter, r *http.Request) {
+func (h *EventHandler) HandleGetEvents(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	healthSpecialistId := r.URL.Query().Get("healthSpecialistId")
-	if healthSpecialistId == "" {
-		http.Error(w, "healthSpecialistId is required", http.StatusBadRequest)
+	if healthSpecialistId := r.URL.Query().Get("healthSpecialistId"); healthSpecialistId != "" {
+		h.getEventsByHealthSpecialistId(w, r, healthSpecialistId)
 		return
 	}
 
+	if patientId := r.URL.Query().Get("patientId"); patientId != "" {
+		h.getEventsByPatientId(w, r, patientId)
+		return
+	}
+
+	http.Error(w, "Missing required query parameter", http.StatusBadRequest)
+}
+
+func (h *EventHandler) getEventsByHealthSpecialistId(w http.ResponseWriter, r *http.Request, id string) {
 	ctx := r.Context()
-	events, err := h.eventService.GetEventsByHealthSpecialistId(ctx, healthSpecialistId)
+	events, err := h.eventService.GetEventsByHealthSpecialistId(ctx, id)
 	if err != nil {
 		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
 		return
 	}
 
-	if len(events) == 0 {
-		http.Error(w, fmt.Sprintf("no events found for health specialist [%s]", healthSpecialistId), http.StatusInternalServerError)
+	if err := json.NewEncoder(w).Encode(events); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+}
+
+func (h *EventHandler) getEventsByPatientId(w http.ResponseWriter, r *http.Request, id string) {
+	ctx := r.Context()
+	events, err := h.eventService.GetEventsByPatientId(ctx, id)
+	if err != nil {
+		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(events); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
 	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 }

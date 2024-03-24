@@ -46,3 +46,13 @@ func (r *MockEventRepository) GetByHealthSpecialistId(ctx context.Context, healt
 	}
 	return events, nil
 }
+
+func (r *MockEventRepository) GetByPatientId(ctx context.Context, patientId string) ([]*model.Event, error) {
+	var events []*model.Event
+	for _, event := range r.events {
+		if event.PatientID == patientId {
+			events = append(events, event)
+		}
+	}
+	return events, nil
+}

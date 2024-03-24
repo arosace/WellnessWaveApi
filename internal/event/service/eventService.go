@@ -10,6 +10,7 @@ import (
 type EventService interface {
 	ScheduleEvent(context.Context, model.Event) (*model.Event, error)
 	GetEventsByHealthSpecialistId(context.Context, string) ([]*model.Event, error)
+	GetEventsByPatientId(context.Context, string) ([]*model.Event, error)
 }
 
 type eventService struct {
@@ -28,4 +29,8 @@ func (e *eventService) ScheduleEvent(ctx context.Context, event model.Event) (*m
 
 func (e *eventService) GetEventsByHealthSpecialistId(ctx context.Context, healthSpecialistId string) ([]*model.Event, error) {
 	return e.eventRepository.GetByHealthSpecialistId(ctx, healthSpecialistId)
+}
+
+func (e *eventService) GetEventsByPatientId(ctx context.Context, patientId string) ([]*model.Event, error) {
+	return e.eventRepository.GetByPatientId(ctx, patientId)
 }

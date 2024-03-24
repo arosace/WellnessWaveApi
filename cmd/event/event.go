@@ -22,5 +22,5 @@ func (s EventService) Init() {
 
 func (s EventService) RegisterEndpoints() {
 	s.Router.HandleFunc("/events/schedule", s.ServiceHandler.HandleScheduleEvent)
-	s.Router.HandleFunc("/events", s.ServiceHandler.HandleGetEventsByHealthSpecialistId)
+	s.Router.HandleFunc("/events", s.ServiceHandler.HandleGetEvents)
 }
