@@ -18,6 +18,7 @@ type AccountService interface {
 	GetAccountByEmail(ctx context.Context, email string) (*model.Account, error)
 	CheckAccountExists(ctx context.Context, email string) bool
 	AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error)
+	UpdateAccount(ctx context.Context, accountToUpdate model.Account, infoType string) (*model.Account, error)
 }
 
 type accountService struct {
@@ -126,4 +127,52 @@ func (s *accountService) GetAccountByID(ctx context.Context, id string) (*model.
 
 func (s *accountService) GetAttachedAccounts(ctx context.Context, parentId string) ([]*model.Account, error) {
 	return s.accountRepository.FindByParentID(ctx, parentId)
+}
+
+func (s *accountService) UpdateAccount(ctx context.Context, account model.Account, infoType string) (*model.Account, error) {
+	oldAccount, err := s.accountRepository.FindByID(ctx, account.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	isToUpdate := false
+	if infoType == "personal" {
+		if account.FirstName != oldAccount.FirstName {
+			isToUpdate = true
+			oldAccount.FirstName = account.FirstName
+		}
+		if account.LastName != oldAccount.LastName {
+			isToUpdate = true
+			oldAccount.LastName = account.LastName
+		}
+		if account.ParentID != oldAccount.ParentID {
+			isToUpdate = true
+			oldAccount.ParentID = account.ParentID
+		}
+
+		if !isToUpdate {
+			return oldAccount, nil
+		}
+
+		return s.accountRepository.Update(ctx, oldAccount)
+	}
+
+	if account.Password != oldAccount.Password {
+		isToUpdate = true
+		encryptedPassword, err := s.encryptor.Encrypt(account.Password)
+		if err != nil {
+			return nil, errors.New("error when encrypting password")
+		}
+		oldAccount.Password = encryptedPassword
+	}
+	if account.Email != oldAccount.Email {
+		isToUpdate = true
+		oldAccount.Email = account.Email
+	}
+
+	if !isToUpdate {
+		return oldAccount, nil
+	}
+
+	return s.accountRepository.UpdateAuth(ctx, oldAccount)
 }

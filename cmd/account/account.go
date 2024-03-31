@@ -34,4 +34,5 @@ func (s AccountService) RegisterEndpoints() {
 	s.Router.HandleFunc("/accounts", s.ServiceHandler.HandleGetAccounts)
 	s.Router.HandleFunc("/accounts/attach", s.ServiceHandler.HandleAttachAccount)
 	s.Router.HandleFunc("/accounts/{parent_id}", s.ServiceHandler.HandleGetAttachedAccounts)
+	s.Router.HandleFunc("/accounts/update", s.ServiceHandler.HandleUpdateAccount)
 }

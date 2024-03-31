@@ -48,3 +48,23 @@ func (m *Account) ValidateModel() error {
 
 	return nil
 }
+
+func (m *Account) ValidateModelForInfoUpdate() error {
+	if m.FirstName == "" && m.LastName == "" && m.ParentID == "" {
+		return errors.New("no data to update provided")
+	}
+	if m.ID == "" {
+		return errors.New("account id is missing")
+	}
+	return nil
+}
+
+func (m *Account) ValidateModelForAuthUpdate() error {
+	if m.Password == "" && m.Email == "" {
+		return errors.New("no data to update provided")
+	}
+	if m.ID == "" {
+		return errors.New("account id is missing")
+	}
+	return nil
+}

@@ -134,3 +134,44 @@ func (h *AccountHandler) HandleGetAttachedAccounts(w http.ResponseWriter, r *htt
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(attachedAccounts)
 }
+
+func (h *AccountHandler) HandleUpdateAccount(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	infoType := r.URL.Query().Get("type")
+	if infoType == "" || (infoType != "personal" && infoType != "authentication") {
+		http.Error(w, fmt.Sprintf("type url parameter is either missing or invalid. Got: %s. Expected either 'personal' or 'authentication'", infoType), http.StatusBadRequest)
+		return
+	}
+
+	var account model.Account
+	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+		http.Error(w, "Invalid data format", http.StatusBadRequest)
+		return
+	}
+
+	switch infoType {
+	case "personal":
+		if err := account.ValidateModelForInfoUpdate(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	case "authentication":
+		if err := account.ValidateModelForAuthUpdate(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	if _, err := h.accountService.UpdateAccount(ctx, account, infoType); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update account: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

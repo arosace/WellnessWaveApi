@@ -29,6 +29,14 @@ func (s *mockAccountService) AddAccount(ctx context.Context, account model.Accou
 	return args.Get(0).(*model.Account), nil
 }
 
+func (s *mockAccountService) UpdateAccount(ctx context.Context, account model.Account, infoType string) (*model.Account, error) {
+	args := s.Called(account, infoType)
+	if args.Get(1) != nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Account), nil
+}
+
 func (s *mockAccountService) CheckAccountExists(ctx context.Context, email string) bool {
 	args := s.Called(email)
 	return args.Bool(0)
@@ -426,4 +434,64 @@ func TestHandleGetAttachedAccounts(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 	})
+}
+
+func TestHandleUpdateAccount(t *testing.T) {
+	t.Run("when method is not PUT, return Method Not Allowed", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/?type=personal", nil)
+		rr := httptest.NewRecorder()
+		mockService := &mockAccountService{}
+		handler := NewAccountHandler(mockService)
+		r := mux.NewRouter()
+		r.HandleFunc("/", handler.HandleUpdateAccount)
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	})
+
+	t.Run("when type url parameter is missing or invalid, return Bad Request", func(t *testing.T) {
+		bodies := []string{"", "invalid"}
+		for _, body := range bodies {
+			req, _ := http.NewRequest(http.MethodPut, "/?type="+body, nil)
+			rr := httptest.NewRecorder()
+			mockService := &mockAccountService{}
+			h := NewAccountHandler(mockService)
+			r := mux.NewRouter()
+			r.HandleFunc("/", h.HandleUpdateAccount)
+			r.ServeHTTP(rr, req)
+
+			assert.Equal(t, http.StatusBadRequest, rr.Code)
+		}
+	})
+
+	t.Run("when body has invalid data format, return Bad Request", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodPut, "/?type=personal", bytes.NewBufferString("invalid json"))
+		rr := httptest.NewRecorder()
+		mockService := &mockAccountService{}
+		h := NewAccountHandler(mockService)
+		r := mux.NewRouter()
+		r.HandleFunc("/", h.HandleUpdateAccount)
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	// Add more tests for model validation errors, successful update, and update failure
+	// For instance:
+	t.Run("when personal info update is successful, return OK", func(t *testing.T) {
+		accountJSON := `{"email":"test@example.com","first_name":"Name","last_name":"Surname","id":"12"}`
+		req, _ := http.NewRequest(http.MethodPut, "/?type=personal", bytes.NewBufferString(accountJSON))
+		rr := httptest.NewRecorder()
+		mockService := &mockAccountService{}
+		h := NewAccountHandler(mockService)
+		mockService.On("UpdateAccount", mock.AnythingOfType("model.Account"), "personal").Return(&model.Account{}, nil)
+
+		r := mux.NewRouter()
+		r.HandleFunc("/", h.HandleUpdateAccount)
+		r.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+	})
+
+	// Note: Implement similar tests for "authentication" type and error scenarios
 }

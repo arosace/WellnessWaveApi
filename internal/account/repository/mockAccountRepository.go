@@ -86,6 +86,24 @@ func (r *MockAccountRepository) Update(ctx context.Context, user *model.Account)
 	return user, nil
 }
 
+func (r *MockAccountRepository) UpdateAuth(ctx context.Context, user *model.Account) (*model.Account, error) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	if _, emailHasNotChanged := r.accounts[user.Email]; emailHasNotChanged {
+		r.accounts[user.Email] = user
+	} else {
+		for _, a := range r.accounts {
+			if a.ID == user.ID {
+				delete(r.accounts, a.Email)
+			}
+		}
+
+		r.accounts[user.Email] = user
+	}
+
+	return user, nil
+}
+
 func (r *MockAccountRepository) FindByParentID(ctx context.Context, parentId string) ([]*model.Account, error) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
