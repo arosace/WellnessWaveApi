@@ -19,6 +19,7 @@ type AccountService interface {
 	CheckAccountExists(ctx context.Context, email string) bool
 	AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error)
 	UpdateAccount(ctx context.Context, accountToUpdate model.Account, infoType string) (*model.Account, error)
+	Authorize(ctx context.Context, credentials model.LogInCredentials) error
 }
 
 type accountService struct {
@@ -175,4 +176,19 @@ func (s *accountService) UpdateAccount(ctx context.Context, account model.Accoun
 	}
 
 	return s.accountRepository.UpdateAuth(ctx, oldAccount)
+}
+
+func (s *accountService) Authorize(ctx context.Context, credentials model.LogInCredentials) error {
+	account, err := s.accountRepository.FindByEmail(ctx, credentials.Email)
+	if err != nil {
+		return err
+	}
+	decryptedPassword, err := s.encryptor.Decrypt(account.Password)
+	if err != nil {
+		return err
+	}
+	if decryptedPassword != credentials.Password {
+		return errors.New("not_authorized")
+	}
+	return nil
 }

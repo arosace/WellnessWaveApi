@@ -74,6 +74,14 @@ func (s *mockAccountService) GetAttachedAccounts(ctx context.Context, parentId s
 	return args.Get(0).([]*model.Account), nil
 }
 
+func (s *mockAccountService) Authorize(ctx context.Context, credentials model.LogInCredentials) error {
+	args := s.Called(credentials)
+	if args.Get(0) != nil {
+		return args.Error(0)
+	}
+	return nil
+}
+
 func TestHandleAddAccount(t *testing.T) {
 	t.Run("when post method is used, return method not allowed", func(t *testing.T) {
 		rr := httptest.NewRecorder()
@@ -476,8 +484,6 @@ func TestHandleUpdateAccount(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, rr.Code)
 	})
 
-	// Add more tests for model validation errors, successful update, and update failure
-	// For instance:
 	t.Run("when personal info update is successful, return OK", func(t *testing.T) {
 		accountJSON := `{"email":"test@example.com","first_name":"Name","last_name":"Surname","id":"12"}`
 		req, _ := http.NewRequest(http.MethodPut, "/?type=personal", bytes.NewBufferString(accountJSON))
@@ -492,6 +498,66 @@ func TestHandleUpdateAccount(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 	})
+}
 
-	// Note: Implement similar tests for "authentication" type and error scenarios
+func TestHandleLogIn(t *testing.T) {
+	t.Run("when method is not POST, return Method Not Allowed", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		rr := httptest.NewRecorder()
+		mockService := &mockAccountService{}
+		h := NewAccountHandler(mockService)
+		h.HandleLogIn(rr, req)
+		assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+	})
+
+	t.Run("when body has invalid data format, return Bad Request", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString("invalid json"))
+		rr := httptest.NewRecorder()
+		mockService := &mockAccountService{}
+		h := NewAccountHandler(mockService)
+		h.HandleLogIn(rr, req)
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("when login credentials are missing, return Bad Request", func(t *testing.T) {
+		credentials := model.LogInCredentials{Email: "", Password: ""} // Missing credentials
+		body, _ := json.Marshal(credentials)
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(body))
+		rr := httptest.NewRecorder()
+		mockService := &mockAccountService{}
+		h := NewAccountHandler(mockService)
+		h.HandleLogIn(rr, req)
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		assert.Contains(t, rr.Body.String(), "missing_parameters:email,password")
+	})
+
+	t.Run("when authorization fails, return Unauthorized", func(t *testing.T) {
+		credentials := model.LogInCredentials{Email: "user@example.com", Password: "wrongpassword"}
+		body, _ := json.Marshal(credentials)
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(body))
+		rr := httptest.NewRecorder()
+		mockService := &mockAccountService{}
+		h := NewAccountHandler(mockService)
+		mockService.On("Authorize", credentials).Return(errors.New("not_authorized"))
+
+		h.HandleLogIn(rr, req)
+
+		assert.Equal(t, http.StatusUnauthorized, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("when login is successful, return OK", func(t *testing.T) {
+		credentials := model.LogInCredentials{Email: "user@example.com", Password: "correctpassword"}
+		body, _ := json.Marshal(credentials)
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(body))
+		rr := httptest.NewRecorder()
+		mockService := &mockAccountService{}
+		h := NewAccountHandler(mockService)
+		mockService.On("Authorize", credentials).Return(nil)
+
+		h.HandleLogIn(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		mockService.AssertExpectations(t)
+	})
 }

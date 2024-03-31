@@ -175,3 +175,28 @@ func (h *AccountHandler) HandleUpdateAccount(w http.ResponseWriter, r *http.Requ
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *AccountHandler) HandleLogIn(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var params model.LogInCredentials
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		http.Error(w, "Invalid data format", http.StatusBadRequest)
+		return
+	}
+	if err := params.ValidateModel(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.accountService.Authorize(ctx, params); err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
