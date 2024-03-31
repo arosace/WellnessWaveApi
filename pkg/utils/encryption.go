@@ -5,7 +5,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"io"
 )
@@ -13,6 +15,7 @@ import (
 type Encryption interface {
 	Encrypt(plainText string) (string, error)
 	Decrypt(encryptedText string) (string, error)
+	HashSHA256(plainText string, context string) string
 }
 
 type Encryptor struct {
@@ -93,4 +96,11 @@ func (e *Encryptor) Decrypt(encryptedText string) (string, error) {
 		return "", err
 	}
 	return string(plainTextBytes), nil
+}
+
+func (e *Encryptor) HashSHA256(text string, context string) string {
+	hasher := sha256.New()
+	hasher.Write([]byte(text))
+	hashBytes := hasher.Sum([]byte(context))
+	return hex.EncodeToString(hashBytes)
 }

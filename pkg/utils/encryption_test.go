@@ -56,4 +56,17 @@ func TestEncryptionDecryption(t *testing.T) {
 		assert.Nil(t, err, "decryption should not error for empty string")
 		assert.Equal(t, originalText, decryptedText, "decrypted text should match original for empty string")
 	})
+
+	t.Run("when hashing the same text, return same cyphertext", func(t *testing.T) {
+		enctryptor := Encryptor{
+			Passphrase: passphrase,
+		}
+		uuid := "123e4567-e89b-12d3-a456-426614174000"
+
+		// Hash the UUID using SHA-256
+		hashedUUID1 := enctryptor.HashSHA256(uuid, "aaa")
+		hashedUUID2 := enctryptor.HashSHA256(uuid, "aaa")
+
+		assert.Equal(t, hashedUUID1, hashedUUID2)
+	})
 }

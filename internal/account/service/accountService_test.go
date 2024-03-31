@@ -82,6 +82,11 @@ func (m *MockEncryptor) Decrypt(data string) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockEncryptor) HashSHA256(data string, context string) string {
+	args := m.Called(data, context)
+	return args.String(0)
+}
+
 func TestAddAccount(t *testing.T) {
 	testAccount := model.Account{
 		FirstName: "John",

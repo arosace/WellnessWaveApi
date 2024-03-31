@@ -17,6 +17,7 @@ type Account struct {
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
+	AuthKey   string `json:"auth_key"`
 }
 
 func (m *Account) ValidateModel() error {
