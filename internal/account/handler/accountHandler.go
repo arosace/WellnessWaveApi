@@ -24,31 +24,38 @@ func NewAccountHandler(accountService service.AccountService) *AccountHandler {
 
 // HandleAddUser handles the POST request to add a new user.
 func (h *AccountHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request) {
+	res := model.AccountResponse{}
+
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		res.Error = "method_not_allowed"
+		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
 		return
 	}
 
 	var account model.Account
 	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
-		http.Error(w, "wrong_data_type", http.StatusBadRequest)
+		res.Error = "wrong_data_type"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 
 	if err := account.ValidateModel(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		res.Error = "inavlid_data_format"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
 
 	if alreadyExists := h.accountService.CheckAccountExists(ctx, account.Email); alreadyExists {
-		http.Error(w, "email_already_in_use", http.StatusConflict)
+		res.Error = "email_already_in_use"
+		utils.FormatResponse(w, res, http.StatusConflict)
 		return
 	}
 
 	if _, err := h.accountService.AddAccount(ctx, account); err != nil {
-		http.Error(w, "Failed to add user", http.StatusInternalServerError)
+		res.Error = "failed_to_add_user"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 
@@ -177,24 +184,29 @@ func (h *AccountHandler) HandleUpdateAccount(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *AccountHandler) HandleLogIn(w http.ResponseWriter, r *http.Request) {
+	res := model.AccountResponse{}
 	ctx := r.Context()
 
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		res.Error = fmt.Sprintf("%s_method_not_allowed", r.Method)
+		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
 		return
 	}
 	var params model.LogInCredentials
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, "Invalid data format", http.StatusBadRequest)
+		res.Error = "invalid_data_format"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 	if err := params.ValidateModel(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		res.Error = "invalid_data"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 
 	if err := h.accountService.Authorize(ctx, params); err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		res.Error = "unauthorized"
+		utils.FormatResponse(w, res, http.StatusUnauthorized)
 		return
 	}
 

@@ -4,6 +4,7 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/handler"
 	"github.com/arosace/WellnessWaveApi/internal/account/repository"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
+	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/gorilla/mux"
 )
@@ -30,10 +31,10 @@ func (s AccountService) Init() {
 }
 
 func (s AccountService) RegisterEndpoints() {
-	s.Router.HandleFunc("/accounts/register", s.ServiceHandler.HandleAddAccount)
-	s.Router.HandleFunc("/accounts", s.ServiceHandler.HandleGetAccounts)
-	s.Router.HandleFunc("/accounts/attach", s.ServiceHandler.HandleAttachAccount)
-	s.Router.HandleFunc("/accounts/{parent_id}", s.ServiceHandler.HandleGetAttachedAccounts)
-	s.Router.HandleFunc("/accounts/update", s.ServiceHandler.HandleUpdateAccount)
-	s.Router.HandleFunc("/accounts/login", s.ServiceHandler.HandleLogIn)
+	s.Router.HandleFunc("/register", utils.HttpMiddleware(s.ServiceHandler.HandleAddAccount))
+	s.Router.HandleFunc("/accounts", utils.HttpMiddleware(s.ServiceHandler.HandleGetAccounts))
+	s.Router.HandleFunc("/accounts/attach", utils.HttpMiddleware(s.ServiceHandler.HandleAttachAccount))
+	s.Router.HandleFunc("/accounts/{parent_id}", utils.HttpMiddleware(s.ServiceHandler.HandleGetAttachedAccounts))
+	s.Router.HandleFunc("/accounts/update", utils.HttpMiddleware(s.ServiceHandler.HandleUpdateAccount))
+	s.Router.HandleFunc("/login", utils.HttpMiddleware(s.ServiceHandler.HandleLogIn))
 }
