@@ -29,10 +29,9 @@ func HttpMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 func FormatResponse(w http.ResponseWriter, response interface{}, code int) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	if response != nil {
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 	}
-
 }

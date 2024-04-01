@@ -74,12 +74,12 @@ func (s *mockAccountService) GetAttachedAccounts(ctx context.Context, parentId s
 	return args.Get(0).([]*model.Account), nil
 }
 
-func (s *mockAccountService) Authorize(ctx context.Context, credentials model.LogInCredentials) error {
+func (s *mockAccountService) Authorize(ctx context.Context, credentials model.LogInCredentials) (*model.Account, error) {
 	args := s.Called(credentials)
-	if args.Get(0) != nil {
-		return args.Error(0)
+	if args.Get(1) != nil {
+		return nil, args.Error(1)
 	}
-	return nil
+	return args.Get(0).(*model.Account), nil
 }
 
 func TestHandleAddAccount(t *testing.T) {
@@ -117,7 +117,7 @@ func TestHandleAddAccount(t *testing.T) {
 		userJSON, _ := json.Marshal(testUser)
 		rr := httptest.NewRecorder()
 
-		req, err := http.NewRequest("POST", "/accounts/register", bytes.NewBuffer(userJSON))
+		req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(userJSON))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -174,7 +174,7 @@ func TestHandleAddAccount(t *testing.T) {
 		mockService.On("CheckAccountExists", testUser.Email).Return(false)
 		mockService.On("AddAccount", testUser).Return(nil, errors.New("error"))
 
-		req, err := http.NewRequest("POST", "/accounts/register", bytes.NewBuffer(userJSON))
+		req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(userJSON))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -522,7 +522,7 @@ func TestHandleLogIn(t *testing.T) {
 	t.Run("when login credentials are missing, return Bad Request", func(t *testing.T) {
 		credentials := model.LogInCredentials{Email: "", Password: ""} // Missing credentials
 		body, _ := json.Marshal(credentials)
-		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(body))
+		req, _ := http.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(body))
 		rr := httptest.NewRecorder()
 		mockService := &mockAccountService{}
 		h := NewAccountHandler(mockService)
@@ -538,7 +538,7 @@ func TestHandleLogIn(t *testing.T) {
 		rr := httptest.NewRecorder()
 		mockService := &mockAccountService{}
 		h := NewAccountHandler(mockService)
-		mockService.On("Authorize", credentials).Return(errors.New("not_authorized"))
+		mockService.On("Authorize", credentials).Return(nil, errors.New("not_authorized"))
 
 		h.HandleLogIn(rr, req)
 

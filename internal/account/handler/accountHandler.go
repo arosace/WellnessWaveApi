@@ -40,7 +40,7 @@ func (h *AccountHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := account.ValidateModel(); err != nil {
-		res.Error = "inavlid_data_format"
+		res.Error = fmt.Sprintf("inavlid_data_format: %v", err)
 		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
@@ -54,8 +54,8 @@ func (h *AccountHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request
 	}
 
 	if _, err := h.accountService.AddAccount(ctx, account); err != nil {
-		res.Error = "failed_to_add_user"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
+		res.Error = fmt.Sprintf("failed_to_add_user: %v", err)
+		utils.FormatResponse(w, res, http.StatusInternalServerError)
 		return
 	}
 
@@ -112,6 +112,7 @@ func (h *AccountHandler) HandleAttachAccount(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *AccountHandler) HandleGetAttachedAccounts(w http.ResponseWriter, r *http.Request) {
+	res := model.AccountResponse{}
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
@@ -122,24 +123,26 @@ func (h *AccountHandler) HandleGetAttachedAccounts(w http.ResponseWriter, r *htt
 	requestParams := utils.GetHTTPVars(r)
 	parentId := requestParams["parent_id"]
 	if parentId == "" {
-		http.Error(w, "parameter parent_id is missing", http.StatusBadRequest)
+		res.Error = "parameter parent_id is missing"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 	if _, err := strconv.ParseInt(parentId, 10, 32); err != nil {
-		http.Error(w, "unexpected http parameter", http.StatusBadRequest)
+		res.Error = "unexpected http parameter"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
 	attachedAccounts, err := h.accountService.GetAttachedAccounts(ctx, parentId)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get accounts attached to account (%s): %v", parentId, err), http.StatusInternalServerError)
+		res.Error = fmt.Sprintf("Failed to get accounts attached to account (%s): %v", parentId, err)
+		utils.FormatResponse(w, res, http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(attachedAccounts)
+	res.Data = attachedAccounts
+	utils.FormatResponse(w, res, http.StatusOK)
 }
 
 func (h *AccountHandler) HandleUpdateAccount(w http.ResponseWriter, r *http.Request) {
@@ -199,16 +202,18 @@ func (h *AccountHandler) HandleLogIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := params.ValidateModel(); err != nil {
-		res.Error = "invalid_data"
+		res.Error = fmt.Sprintf("invalid_data: %v", err)
 		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 
-	if err := h.accountService.Authorize(ctx, params); err != nil {
+	authorizedAccount, err := h.accountService.Authorize(ctx, params)
+	if err != nil {
 		res.Error = "unauthorized"
 		utils.FormatResponse(w, res, http.StatusUnauthorized)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	res.Data = authorizedAccount
+	utils.FormatResponse(w, res, http.StatusOK)
 }

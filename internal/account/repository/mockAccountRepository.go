@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"log"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -35,6 +36,7 @@ func (r *MockAccountRepository) Add(ctx context.Context, user model.Account) (*m
 
 	user.ID = randomIntegerStr
 	r.accounts[user.Email] = &user
+	log.Println(user)
 	return &user, nil
 }
 
@@ -108,7 +110,7 @@ func (r *MockAccountRepository) FindByParentID(ctx context.Context, parentId str
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	var accounts []*model.Account
+	accounts := make([]*model.Account, 0)
 	for _, a := range r.accounts {
 		if a.ParentID == parentId {
 			accounts = append(accounts, a)
