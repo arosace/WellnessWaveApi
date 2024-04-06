@@ -26,7 +26,7 @@ func (m *mockEventService) ScheduleEvent(ctx context.Context, event model.Event)
 	return args.Get(0).(*model.Event), nil
 }
 
-func (m *mockEventService) GetEventsByHealthSpecialistId(ctx context.Context, healthSpecialistId string) ([]*model.Event, error) {
+func (m *mockEventService) GetEventsByHealthSpecialistId(ctx context.Context, healthSpecialistId string, after string) ([]*model.Event, error) {
 	args := m.Called(healthSpecialistId)
 	if args.Get(1) != nil {
 		return nil, args.Error(1)
@@ -34,7 +34,7 @@ func (m *mockEventService) GetEventsByHealthSpecialistId(ctx context.Context, he
 	return args.Get(0).([]*model.Event), nil
 }
 
-func (m *mockEventService) GetEventsByPatientId(ctx context.Context, id string) ([]*model.Event, error) {
+func (m *mockEventService) GetEventsByPatientId(ctx context.Context, id string, after string) ([]*model.Event, error) {
 	args := m.Called(id)
 	return args.Get(0).([]*model.Event), args.Error(1)
 }

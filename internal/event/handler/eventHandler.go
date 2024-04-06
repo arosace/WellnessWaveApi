@@ -2,11 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/arosace/WellnessWaveApi/internal/event/model"
 	"github.com/arosace/WellnessWaveApi/internal/event/service"
+	"github.com/arosace/WellnessWaveApi/pkg/utils"
 )
 
 type EventHandler struct {
@@ -47,22 +49,34 @@ func (h *EventHandler) HandleScheduleEvent(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *EventHandler) HandleGetEvents(w http.ResponseWriter, r *http.Request) {
+	res := model.EventResponse{}
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
+	var events []*model.Event
+	var err error
 	if healthSpecialistId := r.URL.Query().Get("healthSpecialistId"); healthSpecialistId != "" {
-		h.getEventsByHealthSpecialistId(w, r, healthSpecialistId)
-		return
+		events, err = h.getEventsByHealthSpecialistId(w, r, healthSpecialistId, r.URL.Query().Get("after"))
 	}
 
 	if patientId := r.URL.Query().Get("patientId"); patientId != "" {
-		h.getEventsByPatientId(w, r, patientId)
+		events, err = h.getEventsByPatientId(w, r, patientId, r.URL.Query().Get("after"))
+	}
+
+	if err != nil {
+		res.Error = err.Error()
+		utils.FormatResponse(w, res, http.StatusBadRequest)
 		return
 	}
 
-	http.Error(w, "Missing required query parameter", http.StatusBadRequest)
+	if events == nil {
+		res.Data = []*model.Event{}
+	} else {
+		res.Data = events
+	}
+	utils.FormatResponse(w, res, http.StatusOK)
 }
 
 func (h *EventHandler) HandleRescheduleEvent(w http.ResponseWriter, r *http.Request) {
@@ -92,34 +106,20 @@ func (h *EventHandler) HandleRescheduleEvent(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *EventHandler) getEventsByHealthSpecialistId(w http.ResponseWriter, r *http.Request, id string) {
+func (h *EventHandler) getEventsByHealthSpecialistId(w http.ResponseWriter, r *http.Request, id string, after string) ([]*model.Event, error) {
 	ctx := r.Context()
-	events, err := h.eventService.GetEventsByHealthSpecialistId(ctx, id)
+	events, err := h.eventService.GetEventsByHealthSpecialistId(ctx, id, after)
 	if err != nil {
-		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
-		return
+		return nil, errors.New("Failed to retrieve events")
 	}
-
-	if err := json.NewEncoder(w).Encode(events); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
+	return events, nil
 }
 
-func (h *EventHandler) getEventsByPatientId(w http.ResponseWriter, r *http.Request, id string) {
+func (h *EventHandler) getEventsByPatientId(w http.ResponseWriter, r *http.Request, id string, after string) ([]*model.Event, error) {
 	ctx := r.Context()
-	events, err := h.eventService.GetEventsByPatientId(ctx, id)
+	events, err := h.eventService.GetEventsByPatientId(ctx, id, after)
 	if err != nil {
-		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
-		return
+		return nil, errors.New("Failed to retrieve events")
 	}
-
-	if err := json.NewEncoder(w).Encode(events); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
+	return events, nil
 }

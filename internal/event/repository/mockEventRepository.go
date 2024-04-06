@@ -2,12 +2,16 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/arosace/WellnessWaveApi/internal/event/model"
 )
+
+const layout = "2006-01-02--15:04"
 
 // MockUserRepository is a mock implementation of UserRepository that stores user data in memory.
 type MockEventRepository struct {
@@ -37,21 +41,67 @@ func (r *MockEventRepository) Add(ctx context.Context, event model.Event) (*mode
 	return &event, nil
 }
 
-func (r *MockEventRepository) GetByHealthSpecialistId(ctx context.Context, healthSpecialistId string) ([]*model.Event, error) {
+func (r *MockEventRepository) GetByHealthSpecialistId(ctx context.Context, healthSpecialistId string, after string) ([]*model.Event, error) {
 	var events []*model.Event
+
+	var afterDate time.Time
+	var err error
+	if after != "" {
+		afterDate, err = time.Parse(layout, after)
+		if err != nil {
+			fmt.Printf("Error parsing date 1: %v\n", err)
+			return nil, err
+		}
+	}
+
 	for _, event := range r.events {
 		if event.HealthSpecialistID == healthSpecialistId {
-			events = append(events, event)
+			if after != "" {
+				eventDate, err := time.Parse(layout, event.EventDate)
+				if err != nil {
+					fmt.Printf("Error parsing date 1: %v\n", err)
+					return nil, err
+				}
+				if eventDate.After(afterDate) {
+					events = append(events, event)
+				}
+			} else {
+				events = append(events, event)
+			}
+
 		}
 	}
 	return events, nil
 }
 
-func (r *MockEventRepository) GetByPatientId(ctx context.Context, patientId string) ([]*model.Event, error) {
+func (r *MockEventRepository) GetByPatientId(ctx context.Context, patientId string, after string) ([]*model.Event, error) {
 	var events []*model.Event
+
+	var afterDate time.Time
+	var err error
+	if after != "" {
+		afterDate, err = time.Parse(layout, after)
+		if err != nil {
+			fmt.Printf("Error parsing date 1: %v\n", err)
+			return nil, err
+		}
+	}
+
 	for _, event := range r.events {
 		if event.PatientID == patientId {
-			events = append(events, event)
+			if after != "" {
+				eventDate, err := time.Parse(layout, event.EventDate)
+				if err != nil {
+					fmt.Printf("Error parsing date 1: %v\n", err)
+					return nil, err
+				}
+				if eventDate.After(afterDate) {
+					events = append(events, event)
+				}
+			} else {
+				events = append(events, event)
+			}
+
 		}
 	}
 	return events, nil
