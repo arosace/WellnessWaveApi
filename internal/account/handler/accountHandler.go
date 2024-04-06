@@ -9,7 +9,6 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
-	"github.com/gorilla/mux"
 )
 
 // UserHandler handles HTTP requests for user operations.
@@ -63,21 +62,54 @@ func (h *AccountHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request
 }
 
 func (h *AccountHandler) HandleGetAccounts(w http.ResponseWriter, r *http.Request) {
+	res := model.AccountResponse{}
+	ctx := r.Context()
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	ctx := r.Context()
 	accounts, err := h.accountService.GetAccounts(ctx)
 	if err != nil {
-		http.Error(w, "Failed to get accounts", http.StatusInternalServerError)
+		res.Error = fmt.Sprintf("Failed to get accounts: %v", err)
+		utils.FormatResponse(w, res, http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(accounts)
+	res.Data = accounts
+	utils.FormatResponse(w, res, http.StatusOK)
+}
+
+func (h *AccountHandler) HandleGetAccountsById(w http.ResponseWriter, r *http.Request) {
+	res := model.AccountResponse{}
+	ctx := r.Context()
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	requestParams := utils.GetHTTPVars(r)
+	id := requestParams["id"]
+	if id == "" {
+		res.Error = "parameter id is missing"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
+		return
+	}
+
+	if _, err := strconv.ParseInt(id, 10, 32); err != nil {
+		res.Error = "unexpected http parameter"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
+		return
+	}
+	account, err := h.accountService.GetAccountById(ctx, id)
+	if err != nil {
+		res.Error = fmt.Sprintf("Failed to get account [%s]: %v", id, err)
+		utils.FormatResponse(w, res, http.StatusInternalServerError)
+		return
+	}
+
+	res.Data = account
+	utils.FormatResponse(w, res, http.StatusOK)
 }
 
 func (h *AccountHandler) HandleAttachAccount(w http.ResponseWriter, r *http.Request) {
@@ -118,8 +150,6 @@ func (h *AccountHandler) HandleGetAttachedAccounts(w http.ResponseWriter, r *htt
 		return
 	}
 
-	vars := mux.Vars(r)
-	fmt.Println(vars)
 	requestParams := utils.GetHTTPVars(r)
 	parentId := requestParams["parent_id"]
 	if parentId == "" {

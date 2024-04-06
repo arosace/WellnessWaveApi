@@ -50,6 +50,14 @@ func (s *mockAccountService) GetAccounts(ctx context.Context) ([]*model.Account,
 	return args.Get(0).([]*model.Account), nil
 }
 
+func (s *mockAccountService) GetAccountById(ctx context.Context, id string) (*model.Account, error) {
+	args := s.Called(id)
+	if args.Get(1) != nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Account), nil
+}
+
 func (s *mockAccountService) AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error) {
 	args := s.Called(accountToAttach)
 	if args.Get(1) != nil {
