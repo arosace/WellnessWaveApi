@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"log"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -36,7 +35,6 @@ func (r *MockAccountRepository) Add(ctx context.Context, user model.Account) (*m
 
 	user.ID = randomIntegerStr
 	r.accounts[user.Email] = &user
-	log.Println(user)
 	return &user, nil
 }
 
