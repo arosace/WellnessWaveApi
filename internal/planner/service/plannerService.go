@@ -13,6 +13,8 @@ import (
 type PlannerService interface {
 	AddMeal(context.Context, *model.Meal) error
 	AddPlan(context.Context, *model.Plan) error
+	GetMealById(context.Context, string) (*model.Meal, error)
+	GetMealsByHealthSpecialistId(context.Context, string) ([]*model.Meal, error)
 }
 
 type plannerService struct {
@@ -35,6 +37,22 @@ func (s *plannerService) AddMeal(ctx context.Context, meal *model.Meal) error {
 	}
 	s.plannerRepository.AddMeal(meal)
 	return nil
+}
+
+func (s *plannerService) GetMealById(ctx context.Context, mealId string) (*model.Meal, error) {
+	m, err := s.plannerRepository.GetMealById(mealId)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (s *plannerService) GetMealsByHealthSpecialistId(ctx context.Context, healthSpecialistId string) ([]*model.Meal, error) {
+	m, err := s.plannerRepository.GetMealsByHealthSpecialistId(healthSpecialistId)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (s *plannerService) AddPlan(ctx context.Context, plan *model.Plan) error {

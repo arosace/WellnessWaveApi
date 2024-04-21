@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -91,4 +92,59 @@ func (h *PlannerHandler) HandleAddMealPlan(w http.ResponseWriter, r *http.Reques
 
 	res.Data = plan
 	utils.FormatResponse(w, res, http.StatusCreated)
+}
+
+func (h *PlannerHandler) HandleGetMeal(w http.ResponseWriter, r *http.Request) {
+	res := utils.GenericHttpResponse{}
+	ctx := context.Background()
+	if r.Method != http.MethodGet {
+		res.Error = "Method Not Allowed"
+		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
+		return
+	}
+
+	healthSpecialistId := r.URL.Query().Get("healthSpecialistId")
+	mealId := r.URL.Query().Get("mealId")
+	if healthSpecialistId == "" && mealId == "" {
+		res.Error = "query parameters missing, either provide a HealthSpecialistId or a mealId"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
+		return
+	}
+
+	if mealId != "" {
+		meal, err := h.plannerService.GetMealById(ctx, mealId)
+		if err != nil {
+			res.Error = fmt.Sprintf("There was an error retrieving meal by id: %s", err.Error())
+			utils.FormatResponse(w, res, http.StatusInternalServerError)
+			return
+		}
+		if meal == nil {
+			res.Message = "meal not found for given id"
+			utils.FormatResponse(w, res, http.StatusNotFound)
+			return
+		}
+		res.Data = meal
+		utils.FormatResponse(w, res, http.StatusOK)
+		return
+	}
+
+	if healthSpecialistId != "" {
+		meals, err := h.plannerService.GetMealsByHealthSpecialistId(ctx, healthSpecialistId)
+		if err != nil {
+			res.Error = fmt.Sprintf("There was an error retrieving meals by healt specialist id: %s", err.Error())
+			utils.FormatResponse(w, res, http.StatusInternalServerError)
+			return
+		}
+		if meals == nil {
+			res.Message = "No meals found for given health specialist id"
+			utils.FormatResponse(w, res, http.StatusNotFound)
+			return
+		}
+		res.Data = meals
+		utils.FormatResponse(w, res, http.StatusOK)
+		return
+	}
+
+	res.Message = fmt.Sprintf("request correclty processed but no meal was found for healthSpecialistId [%s] and mealId [%s]", healthSpecialistId, mealId)
+	utils.FormatResponse(w, res, http.StatusOK)
 }
