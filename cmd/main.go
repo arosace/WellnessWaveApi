@@ -6,6 +6,7 @@ import (
 
 	"github.com/arosace/WellnessWaveApi/cmd/account"
 	"github.com/arosace/WellnessWaveApi/cmd/event"
+	"github.com/arosace/WellnessWaveApi/cmd/planner"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/gorilla/mux"
 )
@@ -19,6 +20,7 @@ type Service interface {
 type ServiceSetup struct {
 	AccountService *account.AccountService
 	EventService   *event.EventService
+	PlannerService *planner.PlannerService
 }
 
 func main() {
@@ -55,8 +57,15 @@ func initializeServices() (*mux.Router, ServiceSetup) {
 
 	log.Println("Event service is up")
 
+	//initialize planner service
+	plannerServ := planner.PlannerService{Router: r}
+	plannerServ.Init()
+
+	log.Println("Planner service is up")
+
 	return r, ServiceSetup{
 		AccountService: &accServ,
 		EventService:   &eventServ,
+		PlannerService: &plannerServ,
 	}
 }

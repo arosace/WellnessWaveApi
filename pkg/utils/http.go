@@ -37,3 +37,9 @@ func FormatResponse(w http.ResponseWriter, response interface{}, code int) {
 		}
 	}
 }
+
+type GenericHttpResponse struct {
+	Data    interface{} `json:"data"`
+	Error   string      `json:"error_message"`
+	Message string      `json:"message"`
+}
