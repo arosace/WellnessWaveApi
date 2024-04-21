@@ -8,6 +8,8 @@ type PlannerRepository interface {
 	GetMealById(string) (*model.Meal, error)
 	GetMealsByHealthSpecialistId(string) ([]*model.Meal, error)
 	AddPlan(*model.Plan) error
+	GetPlanByPatientId(string) (*model.Plan, error)
+	GetMealPlansByHealthSpecialistId(string) ([]*model.Plan, error)
 	AddDailyPlan(*model.DailyPlan) error
 	MapMealToDailyPlan(string, string) error
 }

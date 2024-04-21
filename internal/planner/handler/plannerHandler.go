@@ -148,3 +148,55 @@ func (h *PlannerHandler) HandleGetMeal(w http.ResponseWriter, r *http.Request) {
 	res.Message = fmt.Sprintf("request correclty processed but no meal was found for healthSpecialistId [%s] and mealId [%s]", healthSpecialistId, mealId)
 	utils.FormatResponse(w, res, http.StatusOK)
 }
+
+func (h *PlannerHandler) HandleGetMealPlan(w http.ResponseWriter, r *http.Request) {
+	res := utils.GenericHttpResponse{}
+	ctx := context.Background()
+	if r.Method != http.MethodGet {
+		res.Error = "Method Not Allowed"
+		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
+		return
+	}
+
+	healthSpecialistId := r.URL.Query().Get("healthSpecialistId")
+	patientId := r.URL.Query().Get("patientId")
+	if healthSpecialistId == "" && patientId == "" {
+		res.Error = "query parameters missing, either provide a HealthSpecialistId or a patientId"
+		utils.FormatResponse(w, res, http.StatusBadRequest)
+		return
+	}
+
+	if patientId != "" {
+		plan, err := h.plannerService.GetMealPlanByPatientId(ctx, patientId)
+		if err != nil {
+			res.Error = fmt.Sprintf("There was an error retrieving meal plan by patient id: %s", err.Error())
+			utils.FormatResponse(w, res, http.StatusInternalServerError)
+			return
+		}
+		if plan == nil {
+			res.Message = "meal plan not found for given patient id"
+			utils.FormatResponse(w, res, http.StatusNotFound)
+			return
+		}
+		res.Data = plan
+		utils.FormatResponse(w, res, http.StatusOK)
+		return
+	}
+
+	if healthSpecialistId != "" {
+		plans, err := h.plannerService.GetMealPlansByHealthSpecialistId(ctx, healthSpecialistId)
+		if err != nil {
+			res.Error = fmt.Sprintf("There was an error retrieving meal plan by health specialist id id: %s", err.Error())
+			utils.FormatResponse(w, res, http.StatusInternalServerError)
+			return
+		}
+		if len(plans) == 0 {
+			res.Message = "meal plans not found for given health specialist id"
+			utils.FormatResponse(w, res, http.StatusNotFound)
+			return
+		}
+		res.Data = plans
+		utils.FormatResponse(w, res, http.StatusOK)
+		return
+	}
+}

@@ -12,9 +12,11 @@ import (
 
 type PlannerService interface {
 	AddMeal(context.Context, *model.Meal) error
-	AddPlan(context.Context, *model.Plan) error
 	GetMealById(context.Context, string) (*model.Meal, error)
 	GetMealsByHealthSpecialistId(context.Context, string) ([]*model.Meal, error)
+	AddPlan(context.Context, *model.Plan) error
+	GetMealPlanByPatientId(context.Context, string) (*model.Plan, error)
+	GetMealPlansByHealthSpecialistId(context.Context, string) ([]string, error)
 }
 
 type plannerService struct {
@@ -56,8 +58,16 @@ func (s *plannerService) GetMealsByHealthSpecialistId(ctx context.Context, healt
 }
 
 func (s *plannerService) AddPlan(ctx context.Context, plan *model.Plan) error {
+	p, err := s.plannerRepository.GetPlanByPatientId(plan.PatientId)
+	if err != nil {
+		return err
+	}
+	if p != nil {
+		return fmt.Errorf("%d - The patient has already a meal plan assigned", http.StatusFound)
+	}
+
 	//store plan in DB
-	err := s.plannerRepository.AddPlan(plan)
+	err = s.plannerRepository.AddPlan(plan)
 	if err != nil {
 		return err
 	}
@@ -88,4 +98,24 @@ func (s *plannerService) AddPlan(ctx context.Context, plan *model.Plan) error {
 		}
 	}
 	return nil
+}
+
+func (s *plannerService) GetMealPlanByPatientId(ctx context.Context, patientId string) (*model.Plan, error) {
+	plan, err := s.plannerRepository.GetPlanByPatientId(patientId)
+	if err != nil {
+		return nil, err
+	}
+	return plan, nil
+}
+
+func (s *plannerService) GetMealPlansByHealthSpecialistId(ctx context.Context, healthSpecialistId string) ([]string, error) {
+	plans, err := s.plannerRepository.GetMealPlansByHealthSpecialistId(healthSpecialistId)
+	if err != nil {
+		return nil, err
+	}
+	var res []string
+	for _, plan := range plans {
+		res = append(res, plan.Id)
+	}
+	return res, nil
 }

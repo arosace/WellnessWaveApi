@@ -24,7 +24,7 @@ func (s PlannerService) Init() {
 func (s PlannerService) RegisterEndpoints() {
 	s.Router.HandleFunc("/planner/addMeal", utils.HttpMiddleware(s.ServiceHandler.HandleAddMeal))
 	s.Router.HandleFunc("/planner/addMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleAddMealPlan))
-	s.Router.HandleFunc("/planner/getMeal", utils.HttpMiddleware(s.ServiceHandler.HandleGetMeal)) //provide health specialist id
-	//s.Router.HandleFunc("/planner/getMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleGetMealPlan)) //can provide both health specialist id and patient id
+	s.Router.HandleFunc("/planner/getMeal", utils.HttpMiddleware(s.ServiceHandler.HandleGetMeal))
+	s.Router.HandleFunc("/planner/getMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleGetMealPlan)) //can provide both health specialist id and patient id
 	//s.Router.HandleFunc("/planner/getDailyMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleGetDailyMealPlan)) //provide planId
 }

@@ -72,6 +72,25 @@ func (r *MockPlannerRepository) AddPlan(plan *model.Plan) error {
 	return nil
 }
 
+func (r *MockPlannerRepository) GetPlanByPatientId(patientId string) (*model.Plan, error) {
+	for _, p := range r.plans {
+		if p.PatientId == patientId {
+			return p, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *MockPlannerRepository) GetMealPlansByHealthSpecialistId(healthSpecialistId string) ([]*model.Plan, error) {
+	var plans []*model.Plan
+	for _, p := range r.plans {
+		if p.HealthSpecialistId == healthSpecialistId {
+			plans = append(plans, p)
+		}
+	}
+	return plans, nil
+}
+
 func (r *MockPlannerRepository) AddDailyPlan(dailyPlan *model.DailyPlan) error {
 	dailyPlan.Id = fmt.Sprintf("%d", dailyPlanCount)
 	r.dailyPlans[dailyPlan.Id] = dailyPlan
