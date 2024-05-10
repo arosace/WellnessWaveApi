@@ -7,9 +7,12 @@ import (
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/gorilla/mux"
+	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 type AccountService struct {
+	App            *pocketbase.PocketBase
 	Router         *mux.Router
 	Encryptor      *encryption.Encryptor
 	ServiceHandler *handler.AccountHandler
@@ -31,8 +34,16 @@ func (s AccountService) Init() {
 }
 
 func (s AccountService) RegisterEndpoints() {
-	s.Router.HandleFunc("/register", utils.HttpMiddleware(s.ServiceHandler.HandleAddAccount))
-	s.Router.HandleFunc("/accounts", utils.HttpMiddleware(s.ServiceHandler.HandleGetAccounts))
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.GET("/api/accounts", s.ServiceHandler.HandleGetAccounts, utils.EchoMiddleware)
+		return nil
+	})
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.POST("/api/accounts/register", s.ServiceHandler.HandleAddAccount, utils.EchoMiddleware)
+		return nil
+	})
+	//s.Router.HandleFunc("/api/register", utils.HttpMiddleware(s.ServiceHandler.HandleAddAccount))
+	//s.Router.HandleFunc("/accounts", utils.HttpMiddleware(s.ServiceHandler.HandleGetAccounts))
 	s.Router.HandleFunc("/accounts/{id}", utils.HttpMiddleware(s.ServiceHandler.HandleGetAccountsById)).Methods("GET", "OPTIONS")
 	s.Router.HandleFunc("/accounts/attach", utils.HttpMiddleware(s.ServiceHandler.HandleAttachAccount)).Methods("POST", "OPTIONS")
 	s.Router.HandleFunc("/accounts/attached/{parent_id}", utils.HttpMiddleware(s.ServiceHandler.HandleGetAttachedAccounts))

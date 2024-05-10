@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v5"
 )
 
 func GetHTTPVars(r *http.Request) map[string]string {
@@ -24,6 +25,21 @@ func HttpMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		next(w, r)
+	}
+}
+
+func EchoMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		c.Request().Header.Set("Access-Control-Allow-Origin", "*")
+		c.Request().Header.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, PATCH")
+		c.Request().Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if c.Request().Method == "OPTIONS" {
+			c.JSON(http.StatusOK, "")
+			return nil
+		}
+
+		return next(c)
 	}
 }
 

@@ -2,13 +2,14 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/arosace/WellnessWaveApi/cmd/account"
 	"github.com/arosace/WellnessWaveApi/cmd/event"
 	"github.com/arosace/WellnessWaveApi/cmd/planner"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/gorilla/mux"
+
+	"github.com/pocketbase/pocketbase"
 )
 
 type Service interface {
@@ -24,17 +25,19 @@ type ServiceSetup struct {
 }
 
 func main() {
-	router, _ := initializeServices()
+	app := pocketbase.New()
+
+	initializeServices(app)
 
 	// Start the HTTP server
-	log.Println("Starting server on port 8080...")
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	log.Println("Starting server on port 8090...")
+	if err := app.Start(); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
 // initializeServices sets up all the services, repositories, and handlers.
-func initializeServices() (*mux.Router, ServiceSetup) {
+func initializeServices(app *pocketbase.PocketBase) (*mux.Router, ServiceSetup) {
 	//initialize router
 	r := mux.NewRouter()
 	//initialize encryptor
@@ -44,6 +47,7 @@ func initializeServices() (*mux.Router, ServiceSetup) {
 
 	//initialize account service
 	accServ := account.AccountService{
+		App:       app,
 		Router:    r,
 		Encryptor: encryptor,
 	}

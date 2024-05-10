@@ -4,20 +4,20 @@ import (
 	"context"
 	"errors"
 
-	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/repository"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
+	"github.com/labstack/echo/v5"
 )
 
 // UserService defines the interface for user operations.
 type AccountService interface {
-	AddAccount(ctx context.Context, account model.Account) (*model.Account, error)
-	GetAccounts(ctx context.Context) ([]*model.Account, error)
+	AddAccount(ctx echo.Context, account model.Account) (*model.Account, error)
+	GetAccounts(c echo.Context) ([]*model.Account, error)
 	GetAccountById(ctx context.Context, id string) (*model.Account, error)
 	GetAttachedAccounts(ctx context.Context, parentId string) ([]*model.Account, error)
 	GetAccountByEmail(ctx context.Context, email string) (*model.Account, error)
-	CheckAccountExists(ctx context.Context, email string) bool
+	CheckAccountExists(ctx echo.Context, email string) bool
 	AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error)
 	UpdateAccount(ctx context.Context, accountToUpdate model.Account, infoType string) (*model.Account, error)
 	Authorize(ctx context.Context, credentials model.LogInCredentials) (*model.Account, error)
@@ -36,7 +36,7 @@ func NewAccountService(accountRepo repository.AccountRepository, encryptor encry
 	}
 }
 
-func (s *accountService) AddAccount(ctx context.Context, account model.Account) (*model.Account, error) {
+func (s *accountService) AddAccount(ctx echo.Context, account model.Account) (*model.Account, error) {
 	encryptedPassword, err := s.encryptor.Encrypt(account.Password)
 	if err != nil {
 		return nil, errors.New("error when encrypting password")
@@ -45,11 +45,11 @@ func (s *accountService) AddAccount(ctx context.Context, account model.Account) 
 	return s.accountRepository.Add(ctx, account)
 }
 
-func (s *accountService) GetAccounts(ctx context.Context) ([]*model.Account, error) {
+func (s *accountService) GetAccounts(ctx echo.Context) ([]*model.Account, error) {
 	return s.accountRepository.List(ctx)
 }
 
-func (s *accountService) CheckAccountExists(ctx context.Context, email string) bool {
+func (s *accountService) CheckAccountExists(ctx echo.Context, email string) bool {
 	_, err := s.accountRepository.FindByEmail(ctx, email)
 	if err != nil {
 		return false
@@ -82,7 +82,7 @@ func (s *accountService) AttachAccount(ctx context.Context, accountToAttach mode
 	//if it does not exist create account and attach
 	//account will be created without password, for now it's just for record
 	if account == nil {
-		newAccount, err := s.accountRepository.Add(ctx, model.Account{
+		/*newAccount, err := s.accountRepository.Add(ctx, model.Account{
 			FirstName: accountToAttach.FirstName,
 			LastName:  accountToAttach.LastName,
 			Email:     accountToAttach.Email,
@@ -92,7 +92,8 @@ func (s *accountService) AttachAccount(ctx context.Context, accountToAttach mode
 		if err != nil {
 			return nil, err
 		}
-		return newAccount, nil
+		return newAccount, nil*/
+		return nil, nil
 		// send patient account created event
 	} else { //if it exists
 		if account.ParentID != "" && account.ParentID != accountToAttach.ParentID { //if it is already attached return error
@@ -112,11 +113,12 @@ func (s *accountService) AttachAccount(ctx context.Context, accountToAttach mode
 }
 
 func (s *accountService) GetAccountByEmail(ctx context.Context, email string) (*model.Account, error) {
-	account, err := s.accountRepository.FindByEmail(ctx, email)
+	/*account, err := s.accountRepository.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-	return account, nil
+	return account, nil*/
+	return nil, nil
 }
 
 func (s *accountService) GetAccountById(ctx context.Context, id string) (*model.Account, error) {
@@ -188,7 +190,7 @@ func (s *accountService) UpdateAccount(ctx context.Context, account model.Accoun
 }
 
 func (s *accountService) Authorize(ctx context.Context, credentials model.LogInCredentials) (*model.Account, error) {
-	account, err := s.accountRepository.FindByEmail(ctx, credentials.Email)
+	/*account, err := s.accountRepository.FindByEmail(ctx, credentials.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -200,4 +202,6 @@ func (s *accountService) Authorize(ctx context.Context, credentials model.LogInC
 		return nil, errors.New("not_authorized")
 	}
 	return account, nil
+	*/
+	return nil, nil
 }

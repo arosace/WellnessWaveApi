@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
+	"github.com/labstack/echo/v5"
 )
 
 // MockUserRepository is a mock implementation of UserRepository that stores user data in memory.
@@ -23,7 +24,7 @@ func NewMockAccountRepository() *MockAccountRepository {
 	}
 }
 
-func (r *MockAccountRepository) Add(ctx context.Context, user model.Account) (*model.Account, error) {
+func (r *MockAccountRepository) Add(ctx echo.Context, user model.Account) (*model.Account, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
@@ -38,7 +39,7 @@ func (r *MockAccountRepository) Add(ctx context.Context, user model.Account) (*m
 	return &user, nil
 }
 
-func (r *MockAccountRepository) List(ctx context.Context) ([]*model.Account, error) {
+func (r *MockAccountRepository) List(ctx echo.Context) ([]*model.Account, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
@@ -67,7 +68,7 @@ func (r *MockAccountRepository) FindByID(ctx context.Context, id string) (*model
 }
 
 // FindByEmail returns a user by their email.
-func (r *MockAccountRepository) FindByEmail(ctx context.Context, email string) (*model.Account, error) {
+func (r *MockAccountRepository) FindByEmail(ctx echo.Context, email string) (*model.Account, error) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 

@@ -12,6 +12,7 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v5"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -37,7 +38,7 @@ func (s *mockAccountService) UpdateAccount(ctx context.Context, account model.Ac
 	return args.Get(0).(*model.Account), nil
 }
 
-func (s *mockAccountService) CheckAccountExists(ctx context.Context, email string) bool {
+func (s *mockAccountService) CheckAccountExists(ctx echo.Context, email string) bool {
 	args := s.Called(email)
 	return args.Bool(0)
 }

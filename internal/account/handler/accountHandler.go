@@ -9,6 +9,8 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
+	"github.com/labstack/echo/v5"
+	"github.com/pocketbase/pocketbase/apis"
 )
 
 // UserHandler handles HTTP requests for user operations.
@@ -22,62 +24,43 @@ func NewAccountHandler(accountService service.AccountService) *AccountHandler {
 }
 
 // HandleAddUser handles the POST request to add a new user.
-func (h *AccountHandler) HandleAddAccount(w http.ResponseWriter, r *http.Request) {
+func (h *AccountHandler) HandleAddAccount(c echo.Context) error {
 	res := model.AccountResponse{}
 
-	if r.Method != http.MethodPost {
-		res.Error = "method_not_allowed"
-		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
-		return
-	}
-
 	var account model.Account
-	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
-		res.Error = "wrong_data_type"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+	if err := c.Bind(&account); err != nil {
+		return apis.NewBadRequestError("wrong_data_type", err)
 	}
 
 	if err := account.ValidateModel(); err != nil {
 		res.Error = fmt.Sprintf("inavlid_data_format: %v", err)
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, res)
 	}
 
-	ctx := r.Context()
-
-	if alreadyExists := h.accountService.CheckAccountExists(ctx, account.Email); alreadyExists {
+	if alreadyExists := h.accountService.CheckAccountExists(c, account.Email); alreadyExists {
 		res.Error = "email_already_in_use"
-		utils.FormatResponse(w, res, http.StatusConflict)
-		return
+		return apis.NewApiError(http.StatusConflict, res.Error, res)
 	}
 
-	if _, err := h.accountService.AddAccount(ctx, account); err != nil {
+	if _, err := h.accountService.AddAccount(c, account); err != nil {
 		res.Error = fmt.Sprintf("failed_to_add_user: %v", err)
-		utils.FormatResponse(w, res, http.StatusInternalServerError)
-		return
+		return apis.NewApiError(http.StatusInternalServerError, res.Error, res)
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	return c.JSON(http.StatusCreated, account)
 }
 
-func (h *AccountHandler) HandleGetAccounts(w http.ResponseWriter, r *http.Request) {
+func (h *AccountHandler) HandleGetAccounts(c echo.Context) error {
 	res := model.AccountResponse{}
-	ctx := r.Context()
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
 
-	accounts, err := h.accountService.GetAccounts(ctx)
+	accounts, err := h.accountService.GetAccounts(c)
 	if err != nil {
 		res.Error = fmt.Sprintf("Failed to get accounts: %v", err)
-		utils.FormatResponse(w, res, http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, res)
 	}
 
 	res.Data = accounts
-	utils.FormatResponse(w, res, http.StatusOK)
+	return c.JSON(http.StatusOK, res)
 }
 
 func (h *AccountHandler) HandleGetAccountsById(w http.ResponseWriter, r *http.Request) {
