@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"errors"
 	"math/rand"
 	"strconv"
@@ -52,7 +51,7 @@ func (r *MockAccountRepository) List(ctx echo.Context) ([]*model.Account, error)
 }
 
 // FindByID returns a user by their ID.
-func (r *MockAccountRepository) FindByID(ctx context.Context, id string) (*model.Account, error) {
+func (r *MockAccountRepository) FindByID(ctx echo.Context, id string) (*model.Account, error) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
@@ -80,14 +79,14 @@ func (r *MockAccountRepository) FindByEmail(ctx echo.Context, email string) (*mo
 	return user, nil
 }
 
-func (r *MockAccountRepository) Update(ctx context.Context, user *model.Account) (*model.Account, error) {
+func (r *MockAccountRepository) Update(ctx echo.Context, user *model.Account) (*model.Account, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.accounts[user.Email] = user
 	return user, nil
 }
 
-func (r *MockAccountRepository) UpdateAuth(ctx context.Context, user *model.Account) (*model.Account, error) {
+func (r *MockAccountRepository) UpdateAuth(ctx echo.Context, user *model.Account) (*model.Account, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	if _, emailHasNotChanged := r.accounts[user.Email]; emailHasNotChanged {
@@ -105,7 +104,7 @@ func (r *MockAccountRepository) UpdateAuth(ctx context.Context, user *model.Acco
 	return user, nil
 }
 
-func (r *MockAccountRepository) FindByParentID(ctx context.Context, parentId string) ([]*model.Account, error) {
+func (r *MockAccountRepository) FindByParentID(ctx echo.Context, parentId string) ([]*model.Account, error) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 

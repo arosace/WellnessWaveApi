@@ -1,9 +1,9 @@
 package service
 
 import (
-	"context"
 	"errors"
 
+	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/repository"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
@@ -13,14 +13,14 @@ import (
 // UserService defines the interface for user operations.
 type AccountService interface {
 	AddAccount(ctx echo.Context, account model.Account) (*model.Account, error)
-	GetAccounts(c echo.Context) ([]*model.Account, error)
-	GetAccountById(ctx context.Context, id string) (*model.Account, error)
-	GetAttachedAccounts(ctx context.Context, parentId string) ([]*model.Account, error)
-	GetAccountByEmail(ctx context.Context, email string) (*model.Account, error)
+	GetAccounts(ctx echo.Context) ([]*model.Account, error)
+	GetAccountById(ctx echo.Context, id string) (*model.Account, error)
+	GetAttachedAccounts(ctx echo.Context, parentId string) ([]*model.Account, error)
+	GetAccountByEmail(ctx echo.Context, email string) (*model.Account, error)
 	CheckAccountExists(ctx echo.Context, email string) bool
-	AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error)
-	UpdateAccount(ctx context.Context, accountToUpdate model.Account, infoType string) (*model.Account, error)
-	Authorize(ctx context.Context, credentials model.LogInCredentials) (*model.Account, error)
+	AttachAccount(ctx echo.Context, accountToAttach model.AttachAccountBody) (*model.Account, error)
+	UpdateAccount(ctx echo.Context, accountToUpdate model.Account, infoType string) (*model.Account, error)
+	Authorize(ctx echo.Context, credentials model.LogInCredentials) (*model.Account, error)
 }
 
 type accountService struct {
@@ -57,11 +57,11 @@ func (s *accountService) CheckAccountExists(ctx echo.Context, email string) bool
 	return true
 }
 
-func (s *accountService) AttachAccount(ctx context.Context, accountToAttach model.AttachAccountBody) (*model.Account, error) {
+func (s *accountService) AttachAccount(ctx echo.Context, accountToAttach model.AttachAccountBody) (*model.Account, error) {
 	var account *model.Account
 
 	//check if parentAccount exists
-	parent, err := s.GetAccountByID(ctx, accountToAttach.ParentID)
+	parent, err := s.GetAccountById(ctx, accountToAttach.ParentID)
 	if err != nil {
 		if err.Error() == "not_found" {
 			return nil, errors.New("parent account not found")
@@ -82,7 +82,7 @@ func (s *accountService) AttachAccount(ctx context.Context, accountToAttach mode
 	//if it does not exist create account and attach
 	//account will be created without password, for now it's just for record
 	if account == nil {
-		/*newAccount, err := s.accountRepository.Add(ctx, model.Account{
+		newAccount, err := s.accountRepository.Add(ctx, model.Account{
 			FirstName: accountToAttach.FirstName,
 			LastName:  accountToAttach.LastName,
 			Email:     accountToAttach.Email,
@@ -92,8 +92,7 @@ func (s *accountService) AttachAccount(ctx context.Context, accountToAttach mode
 		if err != nil {
 			return nil, err
 		}
-		return newAccount, nil*/
-		return nil, nil
+		return newAccount, nil
 		// send patient account created event
 	} else { //if it exists
 		if account.ParentID != "" && account.ParentID != accountToAttach.ParentID { //if it is already attached return error
@@ -112,16 +111,15 @@ func (s *accountService) AttachAccount(ctx context.Context, accountToAttach mode
 	return account, nil
 }
 
-func (s *accountService) GetAccountByEmail(ctx context.Context, email string) (*model.Account, error) {
-	/*account, err := s.accountRepository.FindByEmail(ctx, email)
+func (s *accountService) GetAccountByEmail(ctx echo.Context, email string) (*model.Account, error) {
+	account, err := s.accountRepository.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-	return account, nil*/
-	return nil, nil
+	return account, nil
 }
 
-func (s *accountService) GetAccountById(ctx context.Context, id string) (*model.Account, error) {
+func (s *accountService) GetAccountById(ctx echo.Context, id string) (*model.Account, error) {
 	account, err := s.accountRepository.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -129,19 +127,11 @@ func (s *accountService) GetAccountById(ctx context.Context, id string) (*model.
 	return account, nil
 }
 
-func (s *accountService) GetAccountByID(ctx context.Context, id string) (*model.Account, error) {
-	account, err := s.accountRepository.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return account, nil
-}
-
-func (s *accountService) GetAttachedAccounts(ctx context.Context, parentId string) ([]*model.Account, error) {
+func (s *accountService) GetAttachedAccounts(ctx echo.Context, parentId string) ([]*model.Account, error) {
 	return s.accountRepository.FindByParentID(ctx, parentId)
 }
 
-func (s *accountService) UpdateAccount(ctx context.Context, account model.Account, infoType string) (*model.Account, error) {
+func (s *accountService) UpdateAccount(ctx echo.Context, account model.Account, infoType string) (*model.Account, error) {
 	oldAccount, err := s.accountRepository.FindByID(ctx, account.ID)
 	if err != nil {
 		return nil, err
@@ -189,8 +179,8 @@ func (s *accountService) UpdateAccount(ctx context.Context, account model.Accoun
 	return s.accountRepository.UpdateAuth(ctx, oldAccount)
 }
 
-func (s *accountService) Authorize(ctx context.Context, credentials model.LogInCredentials) (*model.Account, error) {
-	/*account, err := s.accountRepository.FindByEmail(ctx, credentials.Email)
+func (s *accountService) Authorize(ctx echo.Context, credentials model.LogInCredentials) (*model.Account, error) {
+	account, err := s.accountRepository.FindByEmail(ctx, credentials.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -202,6 +192,4 @@ func (s *accountService) Authorize(ctx context.Context, credentials model.LogInC
 		return nil, errors.New("not_authorized")
 	}
 	return account, nil
-	*/
-	return nil, nil
 }

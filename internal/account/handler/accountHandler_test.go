@@ -51,7 +51,7 @@ func (s *mockAccountService) GetAccounts(ctx context.Context) ([]*model.Account,
 	return args.Get(0).([]*model.Account), nil
 }
 
-func (s *mockAccountService) GetAccountById(ctx context.Context, id string) (*model.Account, error) {
+func (s *mockAccountService) GetAccountById(ctx echo.Context, id string) (*model.Account, error) {
 	args := s.Called(id)
 	if args.Get(1) != nil {
 		return nil, args.Error(1)

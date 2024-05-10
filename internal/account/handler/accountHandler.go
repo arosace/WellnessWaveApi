@@ -1,14 +1,12 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
-	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/apis"
 )
@@ -63,170 +61,122 @@ func (h *AccountHandler) HandleGetAccounts(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (h *AccountHandler) HandleGetAccountsById(w http.ResponseWriter, r *http.Request) {
+func (h *AccountHandler) HandleGetAccountsById(c echo.Context) error {
 	res := model.AccountResponse{}
-	ctx := r.Context()
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	id := c.PathParam("id")
 
-	requestParams := utils.GetHTTPVars(r)
-	id := requestParams["id"]
 	if id == "" {
 		res.Error = "parameter id is missing"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, res)
 	}
 
 	if _, err := strconv.ParseInt(id, 10, 32); err != nil {
 		res.Error = "unexpected http parameter"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, res)
 	}
-	account, err := h.accountService.GetAccountById(ctx, id)
+	account, err := h.accountService.GetAccountById(c, id)
 	if err != nil {
 		res.Error = fmt.Sprintf("Failed to get account [%s]: %v", id, err)
-		utils.FormatResponse(w, res, http.StatusInternalServerError)
-		return
+		return apis.NewApiError(http.StatusInternalServerError, res.Error, res)
 	}
 
 	res.Data = account
-	utils.FormatResponse(w, res, http.StatusOK)
+	return c.JSON(http.StatusOK, res)
 }
 
-func (h *AccountHandler) HandleAttachAccount(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func (h *AccountHandler) HandleAttachAccount(ctx echo.Context) error {
 	var attachBody model.AttachAccountBody
-	if err := json.NewDecoder(r.Body).Decode(&attachBody); err != nil {
-		http.Error(w, "wrong_data_type", http.StatusBadRequest)
-		return
+
+	if err := ctx.Bind(&attachBody); err != nil {
+		return apis.NewBadRequestError("wrong_data_type", nil)
 	}
 
 	if err := attachBody.ValidateModel(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(err.Error(), nil)
 	}
 
-	ctx := r.Context()
 	account, err := h.accountService.AttachAccount(ctx, attachBody)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to attach account: %v", err), http.StatusInternalServerError)
-		return
+		return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("Failed to attach account: %v", err), nil)
 	}
 
 	if account == nil {
-		w.WriteHeader(http.StatusOK)
+		return ctx.JSON(http.StatusOK, account)
 	} else {
-		w.WriteHeader(http.StatusCreated)
+		return ctx.JSON(http.StatusCreated, account)
 	}
 }
 
-func (h *AccountHandler) HandleGetAttachedAccounts(w http.ResponseWriter, r *http.Request) {
+func (h *AccountHandler) HandleGetAttachedAccounts(ctx echo.Context) error {
 	res := model.AccountResponse{}
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	requestParams := utils.GetHTTPVars(r)
-	parentId := requestParams["parent_id"]
+	parentId := ctx.PathParam("parent_id")
 	if parentId == "" {
 		res.Error = "parameter parent_id is missing"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 	if _, err := strconv.ParseInt(parentId, 10, 32); err != nil {
 		res.Error = "unexpected http parameter"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
-	ctx := r.Context()
 	attachedAccounts, err := h.accountService.GetAttachedAccounts(ctx, parentId)
 	if err != nil {
 		res.Error = fmt.Sprintf("Failed to get accounts attached to account (%s): %v", parentId, err)
-		utils.FormatResponse(w, res, http.StatusInternalServerError)
-		return
+		return apis.NewApiError(http.StatusInternalServerError, res.Error, nil)
 	}
 
 	res.Data = attachedAccounts
-	utils.FormatResponse(w, res, http.StatusOK)
+	return ctx.JSON(http.StatusOK, res)
 }
 
-func (h *AccountHandler) HandleUpdateAccount(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	infoType := r.URL.Query().Get("type")
+func (h *AccountHandler) HandleUpdateAccount(ctx echo.Context) error {
+	infoType := ctx.QueryParam("search")
 	if infoType == "" || (infoType != "personal" && infoType != "authentication") {
-		http.Error(w, fmt.Sprintf("type url parameter is either missing or invalid. Got: %s. Expected either 'personal' or 'authentication'", infoType), http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(fmt.Sprintf("type url parameter is either missing or invalid. Got: %s. Expected either 'personal' or 'authentication'", infoType), nil)
 	}
 
 	var account model.Account
-	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
-		http.Error(w, "Invalid data format", http.StatusBadRequest)
-		return
+	if err := ctx.Bind(&account); err != nil {
+		return apis.NewBadRequestError("Invalid data format", nil)
 	}
 
 	switch infoType {
 	case "personal":
 		if err := account.ValidateModelForInfoUpdate(); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			return apis.NewBadRequestError(err.Error(), nil)
 		}
 	case "authentication":
 		if err := account.ValidateModelForAuthUpdate(); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			return apis.NewBadRequestError(err.Error(), nil)
 		}
 	}
 
 	if _, err := h.accountService.UpdateAccount(ctx, account, infoType); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update account: %v", err), http.StatusInternalServerError)
-		return
+		return apis.NewApiError(http.StatusInternalServerError, fmt.Sprintf("Failed to update account: %v", err), nil)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return ctx.JSON(http.StatusOK, nil)
 }
 
-func (h *AccountHandler) HandleLogIn(w http.ResponseWriter, r *http.Request) {
+func (h *AccountHandler) HandleLogIn(ctx echo.Context) error {
 	res := model.AccountResponse{}
-	ctx := r.Context()
 
-	if r.Method != http.MethodPost {
-		res.Error = fmt.Sprintf("%s_method_not_allowed", r.Method)
-		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
-		return
-	}
 	var params model.LogInCredentials
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+	if err := ctx.Bind(&params); err != nil {
 		res.Error = "invalid_data_format"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 	if err := params.ValidateModel(); err != nil {
 		res.Error = fmt.Sprintf("invalid_data: %v", err)
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
 	authorizedAccount, err := h.accountService.Authorize(ctx, params)
 	if err != nil {
 		res.Error = "unauthorized"
-		utils.FormatResponse(w, res, http.StatusUnauthorized)
-		return
+		return apis.NewUnauthorizedError(res.Error, nil)
 	}
 
 	res.Data = authorizedAccount
-	utils.FormatResponse(w, res, http.StatusOK)
+	return ctx.JSON(http.StatusOK, res)
 }
