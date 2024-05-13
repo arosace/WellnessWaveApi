@@ -6,14 +6,12 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
-	"github.com/gorilla/mux"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
 
 type AccountService struct {
 	App            *pocketbase.PocketBase
-	Router         *mux.Router
 	Encryptor      *encryption.Encryptor
 	ServiceHandler *handler.AccountHandler
 }
@@ -21,15 +19,11 @@ type AccountService struct {
 func (s AccountService) Init() {
 	// Initialize all repositories
 	accountRepo := repository.NewMockAccountRepository()
-
 	// Initialize all services with their respective repositories
 	accountService := service.NewAccountService(accountRepo, s.Encryptor)
-
 	// Initialize all handlers with their respective services
 	accountServiceHandler := handler.NewAccountHandler(accountService)
-
 	s.ServiceHandler = accountServiceHandler
-
 	s.RegisterEndpoints()
 }
 

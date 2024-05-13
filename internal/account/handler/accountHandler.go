@@ -24,7 +24,6 @@ func NewAccountHandler(accountService service.AccountService) *AccountHandler {
 // HandleAddUser handles the POST request to add a new user.
 func (h *AccountHandler) HandleAddAccount(c echo.Context) error {
 	res := model.AccountResponse{}
-
 	var account model.Account
 	if err := c.Bind(&account); err != nil {
 		return apis.NewBadRequestError("wrong_data_type", err)
@@ -45,7 +44,8 @@ func (h *AccountHandler) HandleAddAccount(c echo.Context) error {
 		return apis.NewApiError(http.StatusInternalServerError, res.Error, res)
 	}
 
-	return c.JSON(http.StatusCreated, account)
+	res.Data = account
+	return c.JSON(http.StatusCreated, res)
 }
 
 func (h *AccountHandler) HandleGetAccounts(c echo.Context) error {

@@ -7,7 +7,6 @@ import (
 	"github.com/arosace/WellnessWaveApi/cmd/event"
 	"github.com/arosace/WellnessWaveApi/cmd/planner"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
-	"github.com/gorilla/mux"
 
 	"github.com/pocketbase/pocketbase"
 )
@@ -37,9 +36,7 @@ func main() {
 }
 
 // initializeServices sets up all the services, repositories, and handlers.
-func initializeServices(app *pocketbase.PocketBase) (*mux.Router, ServiceSetup) {
-	//initialize router
-	r := mux.NewRouter()
+func initializeServices(app *pocketbase.PocketBase) {
 	//initialize encryptor
 	encryptor := &encryption.Encryptor{
 		Passphrase: "randompassphraseof32bytes1234567",
@@ -48,7 +45,6 @@ func initializeServices(app *pocketbase.PocketBase) (*mux.Router, ServiceSetup) 
 	//initialize account service
 	accServ := account.AccountService{
 		App:       app,
-		Router:    r,
 		Encryptor: encryptor,
 	}
 	accServ.Init()
@@ -56,20 +52,14 @@ func initializeServices(app *pocketbase.PocketBase) (*mux.Router, ServiceSetup) 
 	log.Println("Account service is up")
 
 	//initialize event service
-	eventServ := event.EventService{Router: r}
+	eventServ := event.EventService{App: app}
 	eventServ.Init()
 
 	log.Println("Event service is up")
 
 	//initialize planner service
-	plannerServ := planner.PlannerService{Router: r}
+	plannerServ := planner.PlannerService{App: app}
 	plannerServ.Init()
 
 	log.Println("Planner service is up")
-
-	return r, ServiceSetup{
-		AccountService: &accServ,
-		EventService:   &eventServ,
-		PlannerService: &plannerServ,
-	}
 }

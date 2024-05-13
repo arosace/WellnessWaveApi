@@ -5,11 +5,12 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/planner/repository"
 	"github.com/arosace/WellnessWaveApi/internal/planner/service"
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
-	"github.com/gorilla/mux"
+	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 type PlannerService struct {
-	Router         *mux.Router
+	App            *pocketbase.PocketBase
 	ServiceHandler *handler.PlannerHandler
 }
 
@@ -22,8 +23,11 @@ func (s PlannerService) Init() {
 }
 
 func (s PlannerService) RegisterEndpoints() {
-	s.Router.HandleFunc("/planner/addMeal", utils.HttpMiddleware(s.ServiceHandler.HandleAddMeal))
-	s.Router.HandleFunc("/planner/addMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleAddMealPlan))
-	s.Router.HandleFunc("/planner/getMeal", utils.HttpMiddleware(s.ServiceHandler.HandleGetMeal))
-	s.Router.HandleFunc("/planner/getMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleGetMealPlan))
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.POST("/api/planner/addMeal", s.ServiceHandler.HandleAddMeal, utils.EchoMiddleware)
+		return nil
+	})
+	//s.Router.HandleFunc("/planner/addMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleAddMealPlan))
+	//s.Router.HandleFunc("/planner/getMeal", utils.HttpMiddleware(s.ServiceHandler.HandleGetMeal))
+	//s.Router.HandleFunc("/planner/getMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleGetMealPlan))
 }

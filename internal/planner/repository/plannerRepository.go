@@ -1,11 +1,14 @@
 package repository
 
-import "github.com/arosace/WellnessWaveApi/internal/planner/model"
+import (
+	"github.com/arosace/WellnessWaveApi/internal/planner/model"
+	"github.com/labstack/echo/v5"
+)
 
 type PlannerRepository interface {
-	AddMeal(*model.Meal) error
-	GetMealByNameAndHealthSpecialistId(string, string) (*model.Meal, error)
-	GetMealById(string) (*model.Meal, error)
+	AddMeal(echo.Context, *model.Meal) error
+	GetMealByNameAndHealthSpecialistId(echo.Context, string, string) (*model.Meal, error)
+	GetMealById(echo.Context, string) (*model.Meal, error)
 	GetMealsByHealthSpecialistId(string) ([]*model.Meal, error)
 	AddPlan(*model.Plan) error
 	GetPlanByPatientId(string) (*model.Plan, error)

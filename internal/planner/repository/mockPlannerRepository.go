@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/arosace/WellnessWaveApi/internal/planner/model"
+	"github.com/labstack/echo/v5"
 )
 
 var mealCount, planCount, dailyPlanCount = 0, 0, 0
@@ -30,14 +31,14 @@ func NewMockPlannerRepository() *MockPlannerRepository {
 	}
 }
 
-func (r *MockPlannerRepository) AddMeal(meal *model.Meal) error {
+func (r *MockPlannerRepository) AddMeal(ctx echo.Context, meal *model.Meal) error {
 	meal.ID = fmt.Sprintf("%d", mealCount)
 	r.meals[meal.Name] = meal
 	mealCount += 1
 	return nil
 }
 
-func (r *MockPlannerRepository) GetMealByNameAndHealthSpecialistId(mealName string, healthSpecialistId string) (*model.Meal, error) {
+func (r *MockPlannerRepository) GetMealByNameAndHealthSpecialistId(ctx echo.Context, mealName string, healthSpecialistId string) (*model.Meal, error) {
 	meal, ok := r.meals[mealName]
 	if ok && meal.HealthSpecialistId == healthSpecialistId {
 		return meal, nil
@@ -46,7 +47,7 @@ func (r *MockPlannerRepository) GetMealByNameAndHealthSpecialistId(mealName stri
 	return nil, nil
 }
 
-func (r *MockPlannerRepository) GetMealById(mealId string) (*model.Meal, error) {
+func (r *MockPlannerRepository) GetMealById(ctx echo.Context, mealId string) (*model.Meal, error) {
 	for _, m := range r.meals {
 		if m.ID == mealId {
 			return m, nil

@@ -5,11 +5,12 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/event/repository"
 	"github.com/arosace/WellnessWaveApi/internal/event/service"
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
-	"github.com/gorilla/mux"
+	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 type EventService struct {
-	Router         *mux.Router
+	App            *pocketbase.PocketBase
 	ServiceHandler *handler.EventHandler
 }
 
@@ -22,6 +23,12 @@ func (s EventService) Init() {
 }
 
 func (s EventService) RegisterEndpoints() {
-	s.Router.HandleFunc("/events/schedule", utils.HttpMiddleware(s.ServiceHandler.HandleScheduleEvent))
-	s.Router.HandleFunc("/events", utils.HttpMiddleware(s.ServiceHandler.HandleGetEvents))
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.POST("/api/events/schedule", s.ServiceHandler.HandleScheduleEvent, utils.EchoMiddleware)
+		return nil
+	})
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.GET("/api/events", s.ServiceHandler.HandleGetEvents, utils.EchoMiddleware)
+		return nil
+	})
 }

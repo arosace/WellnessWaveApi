@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/arosace/WellnessWaveApi/internal/event/model"
+	"github.com/labstack/echo/v5"
 )
 
 const layout = "2006-01-02--15:04"
@@ -26,7 +26,7 @@ func NewMockEventRepository() *MockEventRepository {
 	}
 }
 
-func (r *MockEventRepository) Add(ctx context.Context, event model.Event) (*model.Event, error) {
+func (r *MockEventRepository) Add(ctx echo.Context, event model.Event) (*model.Event, error) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
@@ -41,7 +41,7 @@ func (r *MockEventRepository) Add(ctx context.Context, event model.Event) (*mode
 	return &event, nil
 }
 
-func (r *MockEventRepository) GetByHealthSpecialistId(ctx context.Context, healthSpecialistId string, after string) ([]*model.Event, error) {
+func (r *MockEventRepository) GetByHealthSpecialistId(ctx echo.Context, healthSpecialistId string, after string) ([]*model.Event, error) {
 	var events []*model.Event
 
 	var afterDate time.Time
@@ -74,7 +74,7 @@ func (r *MockEventRepository) GetByHealthSpecialistId(ctx context.Context, healt
 	return events, nil
 }
 
-func (r *MockEventRepository) GetByPatientId(ctx context.Context, patientId string, after string) ([]*model.Event, error) {
+func (r *MockEventRepository) GetByPatientId(ctx echo.Context, patientId string, after string) ([]*model.Event, error) {
 	var events []*model.Event
 
 	var afterDate time.Time
@@ -107,7 +107,7 @@ func (r *MockEventRepository) GetByPatientId(ctx context.Context, patientId stri
 	return events, nil
 }
 
-func (r *MockEventRepository) Update(ctx context.Context, rescheduleRequest model.RescheduleRequest) (*model.Event, error) {
+func (r *MockEventRepository) Update(ctx echo.Context, rescheduleRequest model.RescheduleRequest) (*model.Event, error) {
 	var event *model.Event
 	for _, event := range r.events {
 		if event.ID == rescheduleRequest.EventID {

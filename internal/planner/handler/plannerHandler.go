@@ -10,6 +10,8 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/planner/model"
 	"github.com/arosace/WellnessWaveApi/internal/planner/service"
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
+	"github.com/labstack/echo/v5"
+	"github.com/pocketbase/pocketbase/apis"
 )
 
 type PlannerHandler struct {
@@ -22,43 +24,32 @@ func NewPlannerHandler(plannerService service.PlannerService) *PlannerHandler {
 	}
 }
 
-func (h *PlannerHandler) HandleAddMeal(w http.ResponseWriter, r *http.Request) {
+func (h *PlannerHandler) HandleAddMeal(ctx echo.Context) error {
 	res := utils.GenericHttpResponse{}
-	if r.Method != http.MethodPost {
-		res.Error = "Method Not Allowed"
-		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
-		return
-	}
-
 	var meal model.Meal
-	if err := json.NewDecoder(r.Body).Decode(&meal); err != nil {
+	if err := ctx.Bind(&meal); err != nil {
 		res.Error = "wrong_data_type"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
 	if err := meal.ValidateModel(); err != nil {
 		res.Error = err.Error()
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
-	ctx := r.Context()
 	err := h.plannerService.AddMeal(ctx, &meal)
 	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("%d", http.StatusFound)) {
 		res.Message = "A meal with the same name already exists"
-		utils.FormatResponse(w, res, http.StatusFound)
-		return
+		return apis.NewBadRequestError(err.Error(), res)
 	}
 
 	if err != nil {
 		res.Error = fmt.Sprintf("Failed to add meal due to: %v", err)
-		utils.FormatResponse(w, res, http.StatusInternalServerError)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
 	res.Data = meal
-	utils.FormatResponse(w, res, http.StatusCreated)
+	return ctx.JSON(http.StatusCreated, res)
 }
 
 func (h *PlannerHandler) HandleAddMealPlan(w http.ResponseWriter, r *http.Request) {

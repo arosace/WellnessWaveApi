@@ -1,22 +1,22 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/arosace/WellnessWaveApi/internal/planner/model"
 	"github.com/arosace/WellnessWaveApi/internal/planner/repository"
+	"github.com/labstack/echo/v5"
 )
 
 type PlannerService interface {
-	AddMeal(context.Context, *model.Meal) error
-	GetMealById(context.Context, string) (*model.Meal, error)
-	GetMealsByHealthSpecialistId(context.Context, string) ([]*model.Meal, error)
-	AddPlan(context.Context, *model.Plan) error
-	GetMealPlanByPatientId(context.Context, string) (*model.Plan, error)
-	GetMealPlansByHealthSpecialistId(context.Context, string) ([]string, error)
+	AddMeal(echo.Context, *model.Meal) error
+	GetMealById(echo.Context, string) (*model.Meal, error)
+	GetMealsByHealthSpecialistId(echo.Context, string) ([]*model.Meal, error)
+	AddPlan(echo.Context, *model.Plan) error
+	GetMealPlanByPatientId(echo.Context, string) (*model.Plan, error)
+	GetMealPlansByHealthSpecialistId(echo.Context, string) ([]string, error)
 }
 
 type plannerService struct {
@@ -29,27 +29,27 @@ func NewEventService(plannerRepo repository.PlannerRepository) PlannerService {
 	}
 }
 
-func (s *plannerService) AddMeal(ctx context.Context, meal *model.Meal) error {
-	m, err := s.plannerRepository.GetMealByNameAndHealthSpecialistId(meal.Name, meal.HealthSpecialistId)
+func (s *plannerService) AddMeal(ctx echo.Context, meal *model.Meal) error {
+	m, err := s.plannerRepository.GetMealByNameAndHealthSpecialistId(ctx, meal.Name, meal.HealthSpecialistId)
 	if err != nil {
 		return err
 	}
 	if m != nil {
 		return fmt.Errorf("%d", http.StatusFound)
 	}
-	s.plannerRepository.AddMeal(meal)
+	s.plannerRepository.AddMeal(ctx, meal)
 	return nil
 }
 
-func (s *plannerService) GetMealById(ctx context.Context, mealId string) (*model.Meal, error) {
-	m, err := s.plannerRepository.GetMealById(mealId)
+func (s *plannerService) GetMealById(ctx echo.Context, mealId string) (*model.Meal, error) {
+	m, err := s.plannerRepository.GetMealById(ctx, mealId)
 	if err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (s *plannerService) GetMealsByHealthSpecialistId(ctx context.Context, healthSpecialistId string) ([]*model.Meal, error) {
+func (s *plannerService) GetMealsByHealthSpecialistId(ctx echo.Context, healthSpecialistId string) ([]*model.Meal, error) {
 	m, err := s.plannerRepository.GetMealsByHealthSpecialistId(healthSpecialistId)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (s *plannerService) GetMealsByHealthSpecialistId(ctx context.Context, healt
 	return m, nil
 }
 
-func (s *plannerService) AddPlan(ctx context.Context, plan *model.Plan) error {
+func (s *plannerService) AddPlan(ctx echo.Context, plan *model.Plan) error {
 	p, err := s.plannerRepository.GetPlanByPatientId(plan.PatientId)
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (s *plannerService) AddPlan(ctx context.Context, plan *model.Plan) error {
 	return nil
 }
 
-func (s *plannerService) GetMealPlanByPatientId(ctx context.Context, patientId string) (*model.Plan, error) {
+func (s *plannerService) GetMealPlanByPatientId(ctx echo.Context, patientId string) (*model.Plan, error) {
 	plan, err := s.plannerRepository.GetPlanByPatientId(patientId)
 	if err != nil {
 		return nil, err
@@ -108,7 +108,7 @@ func (s *plannerService) GetMealPlanByPatientId(ctx context.Context, patientId s
 	return plan, nil
 }
 
-func (s *plannerService) GetMealPlansByHealthSpecialistId(ctx context.Context, healthSpecialistId string) ([]string, error) {
+func (s *plannerService) GetMealPlansByHealthSpecialistId(ctx echo.Context, healthSpecialistId string) ([]string, error) {
 	plans, err := s.plannerRepository.GetMealPlansByHealthSpecialistId(healthSpecialistId)
 	if err != nil {
 		return nil, err
