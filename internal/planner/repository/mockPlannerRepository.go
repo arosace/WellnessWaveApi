@@ -56,7 +56,7 @@ func (r *MockPlannerRepository) GetMealById(ctx echo.Context, mealId string) (*m
 	return nil, nil
 }
 
-func (r *MockPlannerRepository) GetMealsByHealthSpecialistId(healthSpecialistId string) ([]*model.Meal, error) {
+func (r *MockPlannerRepository) GetMealsByHealthSpecialistId(ctx echo.Context, healthSpecialistId string) ([]*model.Meal, error) {
 	var meals []*model.Meal
 	for _, m := range r.meals {
 		if m.HealthSpecialistId == healthSpecialistId {
@@ -66,14 +66,14 @@ func (r *MockPlannerRepository) GetMealsByHealthSpecialistId(healthSpecialistId 
 	return meals, nil
 }
 
-func (r *MockPlannerRepository) AddPlan(plan *model.Plan) error {
+func (r *MockPlannerRepository) AddPlan(ctx echo.Context, plan *model.Plan) error {
 	plan.Id = fmt.Sprintf("%d", planCount)
 	r.plans[plan.Id] = plan
 	planCount += 1
 	return nil
 }
 
-func (r *MockPlannerRepository) GetPlanByPatientId(patientId string) (*model.Plan, error) {
+func (r *MockPlannerRepository) GetPlanByPatientId(ctx echo.Context, patientId string) (*model.Plan, error) {
 	for _, p := range r.plans {
 		if p.PatientId == patientId {
 			return p, nil
@@ -82,7 +82,7 @@ func (r *MockPlannerRepository) GetPlanByPatientId(patientId string) (*model.Pla
 	return nil, nil
 }
 
-func (r *MockPlannerRepository) GetMealPlansByHealthSpecialistId(healthSpecialistId string) ([]*model.Plan, error) {
+func (r *MockPlannerRepository) GetMealPlansByHealthSpecialistId(ctx echo.Context, healthSpecialistId string) ([]*model.Plan, error) {
 	var plans []*model.Plan
 	for _, p := range r.plans {
 		if p.HealthSpecialistId == healthSpecialistId {
@@ -92,14 +92,14 @@ func (r *MockPlannerRepository) GetMealPlansByHealthSpecialistId(healthSpecialis
 	return plans, nil
 }
 
-func (r *MockPlannerRepository) AddDailyPlan(dailyPlan *model.DailyPlan) error {
+func (r *MockPlannerRepository) AddDailyPlan(ctx echo.Context, dailyPlan *model.DailyPlan) error {
 	dailyPlan.Id = fmt.Sprintf("%d", dailyPlanCount)
 	r.dailyPlans[dailyPlan.Id] = dailyPlan
 	dailyPlanCount += 1
 	return nil
 }
 
-func (r *MockPlannerRepository) MapMealToDailyPlan(mealId string, dailyPlanId string) error {
+func (r *MockPlannerRepository) MapMealToDailyPlan(ctx echo.Context, mealId string, dailyPlanId string) error {
 	r.dailyPlanMeals[dailyPlanId] = append(r.dailyPlanMeals[dailyPlanId], mealId)
 	return nil
 }

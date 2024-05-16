@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -52,142 +50,108 @@ func (h *PlannerHandler) HandleAddMeal(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, res)
 }
 
-func (h *PlannerHandler) HandleAddMealPlan(w http.ResponseWriter, r *http.Request) {
+func (h *PlannerHandler) HandleAddMealPlan(ctx echo.Context) error {
 	res := utils.GenericHttpResponse{}
-	if r.Method != http.MethodPost {
-		res.Error = "Method Not Allowed"
-		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
-		return
-	}
-
 	var plan model.Plan
-	if err := json.NewDecoder(r.Body).Decode(&plan); err != nil {
+	if err := ctx.Bind(&plan); err != nil {
 		res.Error = "wrong_data_type"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
 	if err := plan.ValidateModel(); err != nil {
 		res.Error = err.Error()
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
-	ctx := r.Context()
 	err := h.plannerService.AddPlan(ctx, &plan)
 	if err != nil {
 		res.Error = fmt.Sprintf("Failed to add plan due to: %v", err)
-		utils.FormatResponse(w, res, http.StatusInternalServerError)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
 	res.Data = plan
-	utils.FormatResponse(w, res, http.StatusCreated)
+	return ctx.JSON(http.StatusCreated, res)
 }
 
-func (h *PlannerHandler) HandleGetMeal(w http.ResponseWriter, r *http.Request) {
+func (h *PlannerHandler) HandleGetMeal(ctx echo.Context) error {
 	res := utils.GenericHttpResponse{}
-	ctx := context.Background()
-	if r.Method != http.MethodGet {
-		res.Error = "Method Not Allowed"
-		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
-		return
-	}
-
-	healthSpecialistId := r.URL.Query().Get("healthSpecialistId")
-	mealId := r.URL.Query().Get("mealId")
+	healthSpecialistId := ctx.QueryParam("healthSpecialistId")
+	mealId := ctx.QueryParam("mealId")
 	if healthSpecialistId == "" && mealId == "" {
 		res.Error = "query parameters missing, either provide a HealthSpecialistId or a mealId"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
 	if mealId != "" {
 		meal, err := h.plannerService.GetMealById(ctx, mealId)
 		if err != nil {
 			res.Error = fmt.Sprintf("There was an error retrieving meal by id: %s", err.Error())
-			utils.FormatResponse(w, res, http.StatusInternalServerError)
-			return
+			return apis.NewBadRequestError(res.Error, nil)
 		}
 		if meal == nil {
 			res.Message = "meal not found for given id"
-			utils.FormatResponse(w, res, http.StatusNotFound)
-			return
+			return apis.NewApiError(http.StatusNotFound, res.Message, res)
 		}
 		res.Data = meal
-		utils.FormatResponse(w, res, http.StatusOK)
-		return
+		return ctx.JSON(http.StatusOK, res)
 	}
 
 	if healthSpecialistId != "" {
 		meals, err := h.plannerService.GetMealsByHealthSpecialistId(ctx, healthSpecialistId)
 		if err != nil {
 			res.Error = fmt.Sprintf("There was an error retrieving meals by healt specialist id: %s", err.Error())
-			utils.FormatResponse(w, res, http.StatusInternalServerError)
-			return
+			return apis.NewBadRequestError(res.Error, nil)
 		}
 		if meals == nil {
 			res.Message = "No meals found for given health specialist id"
-			utils.FormatResponse(w, res, http.StatusNotFound)
-			return
+			return apis.NewApiError(http.StatusNotFound, res.Message, res)
 		}
 		res.Data = meals
-		utils.FormatResponse(w, res, http.StatusOK)
-		return
+		return ctx.JSON(http.StatusOK, res)
 	}
 
 	res.Message = fmt.Sprintf("request correclty processed but no meal was found for healthSpecialistId [%s] and mealId [%s]", healthSpecialistId, mealId)
-	utils.FormatResponse(w, res, http.StatusOK)
+	return ctx.JSON(http.StatusOK, res)
 }
 
-func (h *PlannerHandler) HandleGetMealPlan(w http.ResponseWriter, r *http.Request) {
+func (h *PlannerHandler) HandleGetMealPlan(ctx echo.Context) error {
 	res := utils.GenericHttpResponse{}
-	ctx := context.Background()
-	if r.Method != http.MethodGet {
-		res.Error = "Method Not Allowed"
-		utils.FormatResponse(w, res, http.StatusMethodNotAllowed)
-		return
-	}
 
-	healthSpecialistId := r.URL.Query().Get("healthSpecialistId")
-	patientId := r.URL.Query().Get("patientId")
+	healthSpecialistId := ctx.QueryParam("healthSpecialistId")
+	patientId := ctx.QueryParam("patientId")
 	if healthSpecialistId == "" && patientId == "" {
 		res.Error = "query parameters missing, either provide a HealthSpecialistId or a patientId"
-		utils.FormatResponse(w, res, http.StatusBadRequest)
-		return
+		return apis.NewBadRequestError(res.Error, nil)
 	}
 
 	if patientId != "" {
 		plan, err := h.plannerService.GetMealPlanByPatientId(ctx, patientId)
 		if err != nil {
 			res.Error = fmt.Sprintf("There was an error retrieving meal plan by patient id: %s", err.Error())
-			utils.FormatResponse(w, res, http.StatusInternalServerError)
-			return
+			return apis.NewBadRequestError(res.Error, nil)
 		}
 		if plan == nil {
 			res.Message = "meal plan not found for given patient id"
-			utils.FormatResponse(w, res, http.StatusNotFound)
-			return
+			return apis.NewApiError(http.StatusNotFound, res.Message, res)
 		}
 		res.Data = plan
-		utils.FormatResponse(w, res, http.StatusOK)
-		return
+		return ctx.JSON(http.StatusOK, res)
 	}
 
 	if healthSpecialistId != "" {
 		plans, err := h.plannerService.GetMealPlansByHealthSpecialistId(ctx, healthSpecialistId)
 		if err != nil {
 			res.Error = fmt.Sprintf("There was an error retrieving meal plan by health specialist id id: %s", err.Error())
-			utils.FormatResponse(w, res, http.StatusInternalServerError)
-			return
+			return apis.NewBadRequestError(res.Error, nil)
 		}
 		if len(plans) == 0 {
 			res.Message = "meal plans not found for given health specialist id"
-			utils.FormatResponse(w, res, http.StatusNotFound)
-			return
+			return apis.NewApiError(http.StatusNotFound, res.Message, res)
 		}
 		res.Data = plans
-		utils.FormatResponse(w, res, http.StatusOK)
-		return
+		return ctx.JSON(http.StatusOK, res)
 	}
+
+	res.Message = fmt.Sprintf("request correclty processed but no meal plan was found for healthSpecialistId [%s] and patientId [%s]", healthSpecialistId, patientId)
+	return ctx.JSON(http.StatusOK, res)
 }

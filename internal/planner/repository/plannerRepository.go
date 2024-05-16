@@ -9,10 +9,10 @@ type PlannerRepository interface {
 	AddMeal(echo.Context, *model.Meal) error
 	GetMealByNameAndHealthSpecialistId(echo.Context, string, string) (*model.Meal, error)
 	GetMealById(echo.Context, string) (*model.Meal, error)
-	GetMealsByHealthSpecialistId(string) ([]*model.Meal, error)
-	AddPlan(*model.Plan) error
-	GetPlanByPatientId(string) (*model.Plan, error)
-	GetMealPlansByHealthSpecialistId(string) ([]*model.Plan, error)
-	AddDailyPlan(*model.DailyPlan) error
-	MapMealToDailyPlan(string, string) error
+	GetMealsByHealthSpecialistId(echo.Context, string) ([]*model.Meal, error)
+	AddPlan(echo.Context, *model.Plan) error
+	GetPlanByPatientId(echo.Context, string) (*model.Plan, error)
+	GetMealPlansByHealthSpecialistId(echo.Context, string) ([]*model.Plan, error)
+	AddDailyPlan(echo.Context, *model.DailyPlan) error
+	MapMealToDailyPlan(echo.Context, string, string) error
 }

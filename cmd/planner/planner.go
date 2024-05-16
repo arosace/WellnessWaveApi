@@ -27,7 +27,16 @@ func (s PlannerService) RegisterEndpoints() {
 		e.Router.POST("/api/planner/addMeal", s.ServiceHandler.HandleAddMeal, utils.EchoMiddleware)
 		return nil
 	})
-	//s.Router.HandleFunc("/planner/addMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleAddMealPlan))
-	//s.Router.HandleFunc("/planner/getMeal", utils.HttpMiddleware(s.ServiceHandler.HandleGetMeal))
-	//s.Router.HandleFunc("/planner/getMealPlan", utils.HttpMiddleware(s.ServiceHandler.HandleGetMealPlan))
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.POST("/api/planner/addMealPlan", s.ServiceHandler.HandleAddMealPlan, utils.EchoMiddleware)
+		return nil
+	})
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.GET("/api/planner/getMeal", s.ServiceHandler.HandleGetMeal, utils.EchoMiddleware)
+		return nil
+	})
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.GET("/api/planner/getMealPlan", s.ServiceHandler.HandleGetMealPlan, utils.EchoMiddleware)
+		return nil
+	})
 }

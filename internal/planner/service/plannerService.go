@@ -50,7 +50,7 @@ func (s *plannerService) GetMealById(ctx echo.Context, mealId string) (*model.Me
 }
 
 func (s *plannerService) GetMealsByHealthSpecialistId(ctx echo.Context, healthSpecialistId string) ([]*model.Meal, error) {
-	m, err := s.plannerRepository.GetMealsByHealthSpecialistId(healthSpecialistId)
+	m, err := s.plannerRepository.GetMealsByHealthSpecialistId(ctx, healthSpecialistId)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (s *plannerService) GetMealsByHealthSpecialistId(ctx echo.Context, healthSp
 }
 
 func (s *plannerService) AddPlan(ctx echo.Context, plan *model.Plan) error {
-	p, err := s.plannerRepository.GetPlanByPatientId(plan.PatientId)
+	p, err := s.plannerRepository.GetPlanByPatientId(ctx, plan.PatientId)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (s *plannerService) AddPlan(ctx echo.Context, plan *model.Plan) error {
 	}
 
 	//store plan in DB
-	err = s.plannerRepository.AddPlan(plan)
+	err = s.plannerRepository.AddPlan(ctx, plan)
 	if err != nil {
 		return err
 	}
@@ -76,14 +76,14 @@ func (s *plannerService) AddPlan(ctx echo.Context, plan *model.Plan) error {
 	for _, dailyPlan := range plan.DailyPlan {
 		dailyPlan.PlanId = plan.Id
 		dailyPlan.HealthSpecialistId = plan.HealthSpecialistId
-		err := s.plannerRepository.AddDailyPlan(dailyPlan)
+		err := s.plannerRepository.AddDailyPlan(ctx, dailyPlan)
 		if err != nil {
 			return err
 		}
 		for _, meal := range dailyPlan.Meals {
 			// store each meal in DB if it does not already exist for the specific health specialist
 			meal.HealthSpecialistId = plan.HealthSpecialistId
-			err := s.plannerRepository.AddMeal(meal)
+			err := s.plannerRepository.AddMeal(ctx, meal)
 			if err != nil {
 				if strings.Contains(err.Error(), fmt.Sprintf("%d", http.StatusFound)) {
 					continue
@@ -91,7 +91,7 @@ func (s *plannerService) AddPlan(ctx echo.Context, plan *model.Plan) error {
 				return err
 			}
 			// store mapping of meal to daily plan
-			err = s.plannerRepository.MapMealToDailyPlan(meal.ID, dailyPlan.Id)
+			err = s.plannerRepository.MapMealToDailyPlan(ctx, meal.ID, dailyPlan.Id)
 			if err != nil {
 				return err
 			}
@@ -101,7 +101,7 @@ func (s *plannerService) AddPlan(ctx echo.Context, plan *model.Plan) error {
 }
 
 func (s *plannerService) GetMealPlanByPatientId(ctx echo.Context, patientId string) (*model.Plan, error) {
-	plan, err := s.plannerRepository.GetPlanByPatientId(patientId)
+	plan, err := s.plannerRepository.GetPlanByPatientId(ctx, patientId)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (s *plannerService) GetMealPlanByPatientId(ctx echo.Context, patientId stri
 }
 
 func (s *plannerService) GetMealPlansByHealthSpecialistId(ctx echo.Context, healthSpecialistId string) ([]string, error) {
-	plans, err := s.plannerRepository.GetMealPlansByHealthSpecialistId(healthSpecialistId)
+	plans, err := s.plannerRepository.GetMealPlansByHealthSpecialistId(ctx, healthSpecialistId)
 	if err != nil {
 		return nil, err
 	}
