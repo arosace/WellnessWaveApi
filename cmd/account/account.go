@@ -3,7 +3,6 @@ package account
 import (
 	"fmt"
 	"net/http"
-	"net/mail"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/handler"
@@ -14,6 +13,7 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/models"
 	"github.com/pocketbase/pocketbase/tools/mailer"
 )
@@ -22,15 +22,17 @@ type AccountService struct {
 	App            *pocketbase.PocketBase
 	Encryptor      *encryption.Encryptor
 	ServiceHandler *handler.AccountHandler
+	Mailer         mailer.Mailer
+	Dao            *daos.Dao
 }
 
 func (s AccountService) Init() {
 	// Initialize all repositories
-	accountRepo := repository.NewAccountRepository(s.App)
+	accountRepo := repository.NewAccountRepository(s.Dao)
 	// Initialize all services with their respective repositories
 	accountService := service.NewAccountService(accountRepo, s.Encryptor)
 	// Initialize all handlers with their respective services
-	accountServiceHandler := handler.NewAccountHandler(accountService, s.App)
+	accountServiceHandler := handler.NewAccountHandler(accountService)
 	s.ServiceHandler = accountServiceHandler
 	s.RegisterEndpoints()
 	s.RegisterHooks()
@@ -75,36 +77,13 @@ func (s AccountService) RegisterHooks() {
 	s.App.OnModelAfterCreate("accounts").Add(func(e *core.ModelEvent) error {
 		record := e.Model.(*models.Record)
 		if record.GetString("role") == domain.HhealthSpecialistRole {
-			// Generate verification token
-			token, err := utils.GenerateVerificationToken(record.Email())
-			if err != nil {
-				return apis.NewApiError(http.StatusInternalServerError, "Failed to generate verification token", nil)
-			}
-
-			// Send verification email
-			verificationLink := "http://localhost:3000/confirmation/" + token
-			if err := s.App.NewMailClient().Send(&mailer.Message{
-				From: mail.Address{
-					Address: "hello@noreply.com",
-				},
-				To:      []mail.Address{{Name: record.GetString("username"), Address: record.GetString("email")}},
-				Subject: "Email Verification",
-				Text:    "Please verify your email by clicking the link: " + verificationLink,
-				HTML: fmt.Sprintf(`
-					<p>Hello,</p>
-					<p>Thank you for joining us at WellnessWave.</p>
-					<p>Click on the button below to verify your email address.</p>
-					<p>
-					<a class="btn" href="%s" target="_blank" rel="noopener">Verify</a>
-					</p>
-					<p>
-					Thanks,<br/>
-					WellnessWave team
-					</p>
-				`, verificationLink),
-			},
+			if err := utils.SendVerifyAccountEmail(
+				s.Mailer,
+				"hello@noreply.com",
+				record.GetString("username"),
+				record.GetString("email"),
 			); err != nil {
-				return apis.NewApiError(http.StatusInternalServerError, fmt.Sprintf("Failed to send email:%s", err.Error()), err)
+				return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("Failed to send email:%s", err.Error()), err)
 			}
 		}
 		return nil

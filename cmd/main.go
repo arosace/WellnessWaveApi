@@ -37,6 +37,11 @@ func main() {
 
 // initializeServices sets up all the services, repositories, and handlers.
 func initializeServices(app *pocketbase.PocketBase) {
+	// initialize mailer
+	mailer := app.NewMailClient()
+	// initialize dao
+	dao := app.Dao()
+
 	//initialize encryptor
 	encryptor := &encryption.Encryptor{
 		Passphrase: "randompassphraseof32bytes1234567",
@@ -45,6 +50,8 @@ func initializeServices(app *pocketbase.PocketBase) {
 	//initialize account service
 	accServ := account.AccountService{
 		App:       app,
+		Mailer:    mailer,
+		Dao:       dao,
 		Encryptor: encryptor,
 	}
 	accServ.Init()

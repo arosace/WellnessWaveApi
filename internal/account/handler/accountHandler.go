@@ -9,19 +9,17 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/labstack/echo/v5"
-	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 )
 
 // UserHandler handles HTTP requests for user operations.
 type AccountHandler struct {
-	App            *pocketbase.PocketBase
 	accountService service.AccountService
 }
 
 // NewUserHandler creates a new instance of UserHandler.
-func NewAccountHandler(accountService service.AccountService, app *pocketbase.PocketBase) *AccountHandler {
-	return &AccountHandler{App: app, accountService: accountService}
+func NewAccountHandler(accountService service.AccountService) *AccountHandler {
+	return &AccountHandler{accountService: accountService}
 }
 
 // HandleAddUser handles the POST request to add a new user.
@@ -57,7 +55,6 @@ func (h *AccountHandler) HandleAddAccount(c echo.Context) error {
 }
 
 func (h *AccountHandler) HandleVerifyAccount(c echo.Context) error {
-	//res := model.AccountResponse{}
 	var account model.VerifyAccount
 	if err := c.Bind(&account); err != nil {
 		return apis.NewBadRequestError(fmt.Sprintf("wrong_data_type %s", err.Error()), err)

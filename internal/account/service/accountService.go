@@ -2,10 +2,12 @@ package service
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/repository"
+	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/models"
@@ -14,13 +16,13 @@ import (
 // UserService defines the interface for user operations.
 type AccountService interface {
 	AddAccount(ctx echo.Context, account model.Account) (*models.Record, error)
-	GetAccounts(ctx echo.Context) ([]*model.Account, error)
-	GetAccountById(ctx echo.Context, id string) (*model.Account, error)
+	GetAccounts(ctx echo.Context) ([]*models.Record, error)
+	GetAccountById(ctx echo.Context, id string) (*models.Record, error)
 	GetAttachedAccounts(ctx echo.Context, parentId string) ([]*model.Account, error)
 	GetAccountByEmail(ctx echo.Context, email string) (*models.Record, error)
 	CheckAccountExists(ctx echo.Context, email string) bool
-	AttachAccount(ctx echo.Context, accountToAttach model.AttachAccountBody) (*model.Account, error)
-	UpdateAccount(ctx echo.Context, accountToUpdate model.Account, infoType string) (*model.Account, error)
+	AttachAccount(ctx echo.Context, accountToAttach model.AttachAccountBody) (*models.Record, error)
+	UpdateAccount(ctx echo.Context, accountToUpdate model.Account, infoType string) (*models.Record, error)
 	Authorize(ctx echo.Context, credentials model.LogInCredentials) (*models.Record, error)
 	VerifyAccount(echo.Context, string) (*models.Record, error)
 }
@@ -47,7 +49,7 @@ func (s *accountService) AddAccount(ctx echo.Context, account model.Account) (*m
 	return s.accountRepository.Add(ctx, account)
 }
 
-func (s *accountService) GetAccounts(ctx echo.Context) ([]*model.Account, error) {
+func (s *accountService) GetAccounts(ctx echo.Context) ([]*models.Record, error) {
 	return s.accountRepository.List(ctx)
 }
 
@@ -70,8 +72,8 @@ func (s *accountService) CheckAccountExists(ctx echo.Context, email string) bool
 	return true
 }
 
-func (s *accountService) AttachAccount(ctx echo.Context, accountToAttach model.AttachAccountBody) (*model.Account, error) {
-	var account *model.Account
+func (s *accountService) AttachAccount(ctx echo.Context, accountToAttach model.AttachAccountBody) (*models.Record, error) {
+	var account *models.Record
 
 	//check if parentAccount exists
 	parent, err := s.GetAccountById(ctx, accountToAttach.ParentID)
@@ -83,20 +85,19 @@ func (s *accountService) AttachAccount(ctx echo.Context, accountToAttach model.A
 	}
 
 	//one should not be able to attach to themselves
-	if parent.Email == accountToAttach.Email {
+	if parent.Email() == accountToAttach.Email {
 		return nil, errors.New("cannot attach account to itself")
 	}
 
 	//check if accountToAttach exists
-	//account, err = s.GetAccountByEmail(ctx, accountToAttach.Email)
-	_, err = s.GetAccountByEmail(ctx, accountToAttach.Email)
+	account, err = s.GetAccountByEmail(ctx, accountToAttach.Email)
 	if err != nil && err.Error() != "not_found" {
 		return nil, err
 	}
 	//if it does not exist create account and attach
 	//account will be created without password, for now it's just for record
 	if account == nil {
-		_, err := s.accountRepository.Add(ctx, model.Account{
+		newAccount, err := s.accountRepository.Add(ctx, model.Account{
 			FirstName: accountToAttach.FirstName,
 			LastName:  accountToAttach.LastName,
 			Email:     accountToAttach.Email,
@@ -106,17 +107,15 @@ func (s *accountService) AttachAccount(ctx echo.Context, accountToAttach model.A
 		if err != nil {
 			return nil, err
 		}
-		return account, nil
-		//return newAccount, nil
+		return newAccount, nil
 		// send patient account created event
 	} else { //if it exists
-		if account.ParentID != "" && account.ParentID != accountToAttach.ParentID { //if it is already attached return error
+		if account.GetString("parent_id") != "" && account.GetString("parent_id") != accountToAttach.ParentID { //if it is already attached return error
 			return nil, errors.New("cannot attach an account that is already attached to another")
-		} else if account.ParentID == accountToAttach.ParentID { //is account is already attached to right health specialist
+		} else if account.GetString("parent_id") == accountToAttach.ParentID { //is account is already attached to right health specialist
 			return nil, nil
 		} else { //if it is not already attached update it
-			account.ParentID = accountToAttach.ParentID
-			_, err := s.accountRepository.Update(ctx, account)
+			_, err := s.accountRepository.Attach(ctx, account, accountToAttach.ParentID)
 			if err != nil {
 				return nil, err
 			}
@@ -134,7 +133,7 @@ func (s *accountService) GetAccountByEmail(ctx echo.Context, email string) (*mod
 	return account, nil
 }
 
-func (s *accountService) GetAccountById(ctx echo.Context, id string) (*model.Account, error) {
+func (s *accountService) GetAccountById(ctx echo.Context, id string) (*models.Record, error) {
 	account, err := s.accountRepository.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -146,52 +145,60 @@ func (s *accountService) GetAttachedAccounts(ctx echo.Context, parentId string) 
 	return s.accountRepository.FindByParentID(ctx, parentId)
 }
 
-func (s *accountService) UpdateAccount(ctx echo.Context, account model.Account, infoType string) (*model.Account, error) {
+func (s *accountService) UpdateAccount(ctx echo.Context, account model.Account, infoType string) (*models.Record, error) {
 	oldAccount, err := s.accountRepository.FindByID(ctx, account.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	isToUpdate := false
+	isToUpdate, nameChanged := false, false
 	if infoType == "personal" {
-		if account.FirstName != oldAccount.FirstName {
+		if account.FirstName != oldAccount.GetString("first_name") && account.FirstName != "" {
 			isToUpdate = true
-			oldAccount.FirstName = account.FirstName
+			oldAccount.Set("first_name", account.FirstName)
 		}
-		if account.LastName != oldAccount.LastName {
+		if account.LastName != oldAccount.GetString("last_name") && account.LastName != "" {
 			isToUpdate = true
-			oldAccount.LastName = account.LastName
+			oldAccount.Set("last_name", account.FirstName)
 		}
-		if account.ParentID != oldAccount.ParentID {
+		if account.ParentID != oldAccount.GetString("parent_id") && account.ParentID != "" {
 			isToUpdate = true
-			oldAccount.ParentID = account.ParentID
+			oldAccount.Set("parent_id", account.ParentID)
 		}
 
 		if !isToUpdate {
 			return oldAccount, nil
 		}
 
+		if nameChanged {
+			oldAccount.Set("username", fmt.Sprintf("%s %s", account.FirstName, account.LastName))
+		}
+
 		return s.accountRepository.Update(ctx, oldAccount)
 	}
 
-	if account.Password != oldAccount.Password {
+	if account.Password != oldAccount.GetString("password") {
 		isToUpdate = true
-		encryptedPassword, err := s.encryptor.Encrypt(account.Password)
-		if err != nil {
-			return nil, errors.New("error when encrypting password")
+		if utils.PasswordIsValid(account.Password) {
+			encryptedPassword, err := s.encryptor.Encrypt(account.Password)
+			if err != nil {
+				return nil, errors.New("error when encrypting password")
+			}
+			oldAccount.SetPassword(encryptedPassword)
+		} else {
+			return nil, errors.New("password does not comply with authentication rules")
 		}
-		oldAccount.Password = encryptedPassword
 	}
-	if account.Email != oldAccount.Email {
+	if account.Email != oldAccount.Email() && utils.EmailIsValid(account.Email) {
 		isToUpdate = true
-		oldAccount.Email = account.Email
+		oldAccount.SetEmail(account.Email)
 	}
 
 	if !isToUpdate {
 		return oldAccount, nil
 	}
 
-	return s.accountRepository.UpdateAuth(ctx, oldAccount)
+	return s.accountRepository.Update(ctx, oldAccount)
 }
 
 func (s *accountService) Authorize(ctx echo.Context, credentials model.LogInCredentials) (*models.Record, error) {
