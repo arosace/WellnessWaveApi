@@ -7,18 +7,21 @@ import (
 
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
+	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/labstack/echo/v5"
+	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 )
 
 // UserHandler handles HTTP requests for user operations.
 type AccountHandler struct {
+	App            *pocketbase.PocketBase
 	accountService service.AccountService
 }
 
 // NewUserHandler creates a new instance of UserHandler.
-func NewAccountHandler(accountService service.AccountService) *AccountHandler {
-	return &AccountHandler{accountService: accountService}
+func NewAccountHandler(accountService service.AccountService, app *pocketbase.PocketBase) *AccountHandler {
+	return &AccountHandler{App: app, accountService: accountService}
 }
 
 // HandleAddUser handles the POST request to add a new user.
@@ -39,13 +42,45 @@ func (h *AccountHandler) HandleAddAccount(c echo.Context) error {
 		return apis.NewApiError(http.StatusConflict, res.Error, res)
 	}
 
-	if _, err := h.accountService.AddAccount(c, account); err != nil {
+	account.Username = account.FirstName + " " + account.LastName
+
+	_, err := h.accountService.AddAccount(c, account)
+
+	if err != nil {
 		res.Error = fmt.Sprintf("failed_to_add_user: %v", err)
 		return apis.NewApiError(http.StatusInternalServerError, res.Error, res)
 	}
 
 	res.Data = account
+
 	return c.JSON(http.StatusCreated, res)
+}
+
+func (h *AccountHandler) HandleVerifyAccount(c echo.Context) error {
+	//res := model.AccountResponse{}
+	var account model.VerifyAccount
+	if err := c.Bind(&account); err != nil {
+		return apis.NewBadRequestError(fmt.Sprintf("wrong_data_type %s", err.Error()), err)
+	}
+
+	if account.JWT == "" {
+		return apis.NewBadRequestError("missing_jwt", nil)
+	}
+
+	jwt, err := utils.DecodeJWT(account.JWT)
+	if err != nil {
+		return apis.NewBadRequestError(err.Error(), err)
+	}
+
+	email := jwt["sub"]
+	emailStr, ok := email.(string)
+	if !ok {
+		return apis.NewBadRequestError("email is not a string", nil)
+	}
+
+	h.accountService.VerifyAccount(c, emailStr)
+
+	return c.NoContent(http.StatusOK)
 }
 
 func (h *AccountHandler) HandleGetAccounts(c echo.Context) error {
@@ -173,7 +208,7 @@ func (h *AccountHandler) HandleLogIn(ctx echo.Context) error {
 
 	authorizedAccount, err := h.accountService.Authorize(ctx, params)
 	if err != nil {
-		res.Error = "unauthorized"
+		res.Error = fmt.Sprintf("unauthorized: %s", err.Error())
 		return apis.NewUnauthorizedError(res.Error, nil)
 	}
 

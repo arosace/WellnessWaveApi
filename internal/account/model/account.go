@@ -16,8 +16,13 @@ type Account struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
-	Password  string `json:"password"`
+	Password  string `json:"account_password"`
 	AuthKey   string `json:"auth_key"`
+	Username  string `json:"username"`
+}
+
+type VerifyAccount struct {
+	JWT string `json:"jwt"`
 }
 
 func (m *Account) ValidateModel() error {
@@ -36,7 +41,7 @@ func (m *Account) ValidateModel() error {
 		errorStrings = append(errorStrings, "role")
 	}
 	if m.Password == "" {
-		errorStrings = append(errorStrings, "password")
+		errorStrings = append(errorStrings, "account_password")
 	}
 
 	if len(errorStrings) > 0 {
