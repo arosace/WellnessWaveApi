@@ -145,7 +145,7 @@ func TestHandleAddAccount(t *testing.T) {
 			FirstName: "Name",
 			LastName:  "Surname",
 			Email:     "test@example.com",
-			Role:      domain.HhealthSpecialistRole,
+			Role:      domain.HealthSpecialistRole,
 			Password:  "[]",
 		}
 		userJSON, _ := json.Marshal(testUser)
@@ -172,7 +172,7 @@ func TestHandleAddAccount(t *testing.T) {
 			FirstName: "Name",
 			LastName:  "Surname",
 			Email:     "test@example.com",
-			Role:      domain.HhealthSpecialistRole,
+			Role:      domain.HealthSpecialistRole,
 			Password:  "[]",
 		}
 		userJSON, _ := json.Marshal(testUser)

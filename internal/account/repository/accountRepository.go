@@ -5,15 +5,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/models"
 )
 
-// UserRepository defines the interface for user data access.
+// AccountRepository defines the interface for account data access.
 type AccountRepository interface {
-	Add(ctx echo.Context, user model.Account) (*models.Record, error)
+	Add(echo.Context, model.Account) (*models.Record, error)
 	Update(echo.Context, *models.Record) (*models.Record, error)
 	Attach(echo.Context, *models.Record, string) (*models.Record, error)
 	UpdateVerify(echo.Context, *models.Record) error
@@ -32,7 +33,7 @@ func NewAccountRepository(dao *daos.Dao) *AccountRepo {
 }
 
 func (r *AccountRepo) Add(ctx echo.Context, account model.Account) (*models.Record, error) {
-	collection, err := r.Dao.FindCollectionByNameOrId("accounts")
+	collection, err := r.Dao.FindCollectionByNameOrId(domain.TableName)
 	if err != nil {
 		return nil, err
 	}
@@ -41,14 +42,14 @@ func (r *AccountRepo) Add(ctx echo.Context, account model.Account) (*models.Reco
 	r.LoadFromAccount(record, &account)
 
 	if err := r.Dao.SaveRecord(record); err != nil {
-		return nil, fmt.Errorf("Failed to save user: %w", err)
+		return nil, fmt.Errorf("Failed to save account: %w", err)
 	}
 
 	return record, nil
 }
 
 func (r *AccountRepo) List(ctx echo.Context) ([]*models.Record, error) {
-	query := r.Dao.RecordQuery("accounts")
+	query := r.Dao.RecordQuery(domain.TableName)
 
 	records := []*models.Record{}
 	if err := query.All(&records); err != nil {
@@ -67,9 +68,9 @@ func (r *AccountRepo) Attach(ctx echo.Context, account *models.Record, parentId 
 	return account, nil
 }
 
-// FindByID returns a user by their ID.
+// FindByID returns a account by their ID.
 func (r *AccountRepo) FindByID(ctx echo.Context, id string) (*models.Record, error) {
-	record, err := r.Dao.FindRecordById("accounts", id)
+	record, err := r.Dao.FindRecordById(domain.TableName, id)
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +80,9 @@ func (r *AccountRepo) FindByID(ctx echo.Context, id string) (*models.Record, err
 	return record, nil
 }
 
-// FindByEmail returns a user by their email.
+// FindByEmail returns a account by their email.
 func (r *AccountRepo) FindByEmail(ctx echo.Context, email string) (*models.Record, error) {
-	record, err := r.Dao.FindAuthRecordByEmail("accounts", email)
+	record, err := r.Dao.FindAuthRecordByEmail(domain.TableName, email)
 	if err != nil {
 		return nil, fmt.Errorf("Could not retrieve record by email: %w", err)
 	}

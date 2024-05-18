@@ -1,6 +1,7 @@
 package domain
 
 const (
-	PatientRole           = "PATIENT"
-	HhealthSpecialistRole = "HEALTH_SPECIALIST"
+	PatientRole          = "PATIENT"
+	HealthSpecialistRole = "HEALTH_SPECIALIST"
+	TableName            = "accounts"
 )

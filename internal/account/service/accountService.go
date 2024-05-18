@@ -13,7 +13,7 @@ import (
 	"github.com/pocketbase/pocketbase/models"
 )
 
-// UserService defines the interface for user operations.
+// AccountService defines the interface for account operations.
 type AccountService interface {
 	AddAccount(ctx echo.Context, account model.Account) (*models.Record, error)
 	GetAccounts(ctx echo.Context) ([]*models.Record, error)
@@ -32,7 +32,7 @@ type accountService struct {
 	encryptor         encryption.Encryption
 }
 
-// NewUserService creates a new instance of the user service.
+// NewAccountService creates a new instance of the account service.
 func NewAccountService(accountRepo repository.AccountRepository, encryptor encryption.Encryption) AccountService {
 	return &accountService{
 		accountRepository: accountRepo,

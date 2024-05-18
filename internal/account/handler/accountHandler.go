@@ -12,17 +12,17 @@ import (
 	"github.com/pocketbase/pocketbase/apis"
 )
 
-// UserHandler handles HTTP requests for user operations.
+// AccountHandler handles HTTP requests for account operations.
 type AccountHandler struct {
 	accountService service.AccountService
 }
 
-// NewUserHandler creates a new instance of UserHandler.
+// NewAccountHandler creates a new instance of AccountHandler.
 func NewAccountHandler(accountService service.AccountService) *AccountHandler {
 	return &AccountHandler{accountService: accountService}
 }
 
-// HandleAddUser handles the POST request to add a new user.
+// HandleAddAccount handles the POST request to add a new account.
 func (h *AccountHandler) HandleAddAccount(c echo.Context) error {
 	res := model.AccountResponse{}
 	var account model.Account
@@ -45,7 +45,7 @@ func (h *AccountHandler) HandleAddAccount(c echo.Context) error {
 	_, err := h.accountService.AddAccount(c, account)
 
 	if err != nil {
-		res.Error = fmt.Sprintf("failed_to_add_user: %v", err)
+		res.Error = fmt.Sprintf("failed_to_add_account: %v", err)
 		return apis.NewApiError(http.StatusInternalServerError, res.Error, res)
 	}
 

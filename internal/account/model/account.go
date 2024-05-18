@@ -8,7 +8,7 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 )
 
-// Account represents a user in the system.
+// Account represents a account in the system.
 type Account struct {
 	ID        string `json:"id,omitempty"`
 	ParentID  string `json:"parent_id"`
@@ -48,7 +48,7 @@ func (m *Account) ValidateModel() error {
 		return fmt.Errorf("missing_data: %s", strings.Join(errorStrings, ", "))
 	}
 
-	if m.Role != domain.HhealthSpecialistRole && m.Role != domain.PatientRole {
+	if m.Role != domain.HealthSpecialistRole && m.Role != domain.PatientRole {
 		return errors.New("invalid_role")
 	}
 

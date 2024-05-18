@@ -74,10 +74,11 @@ func (s AccountService) RegisterEndpoints() {
 }
 
 func (s AccountService) RegisterHooks() {
-	s.App.OnModelAfterCreate("accounts").Add(func(e *core.ModelEvent) error {
+	s.App.OnModelAfterCreate(domain.TableName).Add(func(e *core.ModelEvent) error {
 		record := e.Model.(*models.Record)
-		if record.GetString("role") == domain.HhealthSpecialistRole {
-			if err := utils.SendVerifyAccountEmail(
+		switch record.GetString("role") {
+		case domain.HealthSpecialistRole:
+			if err := utils.SendVerifyAccountHealthSpecialistEmail(
 				s.Mailer,
 				"hello@noreply.com",
 				record.GetString("username"),
@@ -85,6 +86,17 @@ func (s AccountService) RegisterHooks() {
 			); err != nil {
 				return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("Failed to send email:%s", err.Error()), err)
 			}
+		case domain.PatientRole:
+			if err := utils.SendVerifyAccountPatientEmail(
+				s.Mailer,
+				"hello@noreply.com",
+				record.GetString("username"),
+				record.GetString("email"),
+			); err != nil {
+				return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("Failed to send email:%s", err.Error()), err)
+			}
+		default:
+			return nil
 		}
 		return nil
 	})
