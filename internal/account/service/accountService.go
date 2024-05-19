@@ -95,20 +95,25 @@ func (s *accountService) AttachAccount(ctx echo.Context, accountToAttach model.A
 		return nil, err
 	}
 	//if it does not exist create account and attach
-	//account will be created without password, for now it's just for record
-	if account == nil {
+	//account will be created with random password, this will need to be changed by patient
+	if account.Id == "" {
+		randPassword, err := utils.GenerateRandomPassword(8)
+		if err != nil {
+			return nil, errors.New("error generating eandom password for attached account")
+		}
+
 		newAccount, err := s.accountRepository.Add(ctx, model.Account{
 			FirstName: accountToAttach.FirstName,
 			LastName:  accountToAttach.LastName,
 			Email:     accountToAttach.Email,
 			Role:      domain.PatientRole,
 			ParentID:  accountToAttach.ParentID,
+			Password:  randPassword,
 		})
 		if err != nil {
 			return nil, err
 		}
 		return newAccount, nil
-		// send patient account created event
 	} else { //if it exists
 		if account.GetString("parent_id") != "" && account.GetString("parent_id") != accountToAttach.ParentID { //if it is already attached return error
 			return nil, errors.New("cannot attach an account that is already attached to another")
@@ -184,6 +189,7 @@ func (s *accountService) UpdateAccount(ctx echo.Context, account model.Account, 
 			if err != nil {
 				return nil, errors.New("error when encrypting password")
 			}
+			oldAccount.Set("encrypted_password", encryptedPassword)
 			oldAccount.SetPassword(encryptedPassword)
 		} else {
 			return nil, errors.New("password does not comply with authentication rules")

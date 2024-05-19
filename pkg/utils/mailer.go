@@ -37,8 +37,8 @@ func SendVerifyAccountHealthSpecialistEmail(mailClient mailer.Mailer, from strin
 	})
 }
 
-func SendVerifyAccountPatientEmail(mailClient mailer.Mailer, from string, toName string, toEmail string) error {
-	token, err := GenerateVerificationToken(toEmail)
+func SendVerifyAccountPatientEmail(mailClient mailer.Mailer, from string, toName string, toEmail string, oldPassword string) error {
+	token, err := GeneratePatientVerificationToken(toEmail, oldPassword)
 	if err != nil {
 		return errors.New("Failed to generate verification token")
 	}
@@ -54,7 +54,8 @@ func SendVerifyAccountPatientEmail(mailClient mailer.Mailer, from string, toName
 		HTML: fmt.Sprintf(`
 			<p>Hello,</p>
 			<p>Thank you for joining us at WellnessWave.</p>
-			<p>Click on the button below to verify your email address and finishing set up your account.</p>
+			<p>Click on the button below to verify your email address.</p>
+			<p>This is your current randomly generated password: %s. You will be asked to change it during the verification process</p>
 			<p>
 			<a class="btn" href="%s" target="_blank" rel="noopener">Verify</a>
 			</p>
@@ -62,6 +63,6 @@ func SendVerifyAccountPatientEmail(mailClient mailer.Mailer, from string, toName
 			Thanks,<br/>
 			WellnessWave team
 			</p>
-		`, verificationLink),
+		`, oldPassword, verificationLink),
 	})
 }

@@ -92,6 +92,7 @@ func (s AccountService) RegisterHooks() {
 				"hello@noreply.com",
 				record.GetString("username"),
 				record.GetString("email"),
+				record.GetString("encrypted_password"),
 			); err != nil {
 				return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("Failed to send email:%s", err.Error()), err)
 			}

@@ -75,8 +75,10 @@ func (h *AccountHandler) HandleVerifyAccount(c echo.Context) error {
 		return apis.NewBadRequestError("email is not a string", nil)
 	}
 
-	h.accountService.VerifyAccount(c, emailStr)
-
+	_, err = h.accountService.VerifyAccount(c, emailStr)
+	if err != nil {
+		return apis.NewBadRequestError(err.Error(), nil)
+	}
 	return c.NoContent(http.StatusOK)
 }
 

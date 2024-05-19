@@ -10,11 +10,34 @@ import (
 
 var jwtSecret = []byte("your_secret_key")
 
+type PatientVerificationClaims struct {
+	jwt.StandardClaims
+	CustomData map[string]interface{} `json:"custom_data"`
+}
+
 func GenerateVerificationToken(email string) (string, error) {
 	claims := &jwt.StandardClaims{
 		Subject:   email,
 		ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
 	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtSecret)
+}
+
+func GeneratePatientVerificationToken(email string, oldPassword string) (string, error) {
+	customData := map[string]interface{}{
+		"old_password": oldPassword,
+	}
+
+	// Create the custom claims
+	claims := &PatientVerificationClaims{
+		StandardClaims: jwt.StandardClaims{
+			Subject:   email,
+			ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
+		},
+		CustomData: customData,
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSecret)
 }
