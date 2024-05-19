@@ -8,6 +8,7 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/labstack/echo/v5"
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/daos"
 	"github.com/pocketbase/pocketbase/models"
 )
@@ -18,10 +19,10 @@ type AccountRepository interface {
 	Update(echo.Context, *models.Record) (*models.Record, error)
 	Attach(echo.Context, *models.Record, string) (*models.Record, error)
 	UpdateVerify(echo.Context, *models.Record) error
-	List(ctx echo.Context) ([]*models.Record, error)
-	FindByID(ctx echo.Context, id string) (*models.Record, error)
-	FindByEmail(ctx echo.Context, email string) (*models.Record, error)
-	FindByParentID(ctx echo.Context, parentId string) ([]*model.Account, error)
+	List(echo.Context) ([]*models.Record, error)
+	FindByID(echo.Context, string) (*models.Record, error)
+	FindByEmail(echo.Context, string) (*models.Record, error)
+	FindByParentID(echo.Context, string) ([]*models.Record, error)
 }
 
 type AccountRepo struct {
@@ -40,6 +41,7 @@ func (r *AccountRepo) Add(ctx echo.Context, account model.Account) (*models.Reco
 
 	record := models.NewRecord(collection)
 	r.LoadFromAccount(record, &account)
+	record.SetPassword(account.Password)
 
 	if err := r.Dao.SaveRecord(record); err != nil {
 		return nil, fmt.Errorf("Failed to save account: %w", err)
@@ -109,19 +111,19 @@ func (r *AccountRepo) UpdateVerify(ctx echo.Context, account *models.Record) err
 	return nil
 }
 
-func (r *AccountRepo) FindByParentID(ctx echo.Context, parentId string) ([]*model.Account, error) {
-	/*r.mux.RLock()
-	defer r.mux.RUnlock()
-
-	accounts := make([]*model.Account, 0)
-	for _, a := range r.accounts {
-		if a.ParentID == parentId {
-			accounts = append(accounts, a)
-		}
+func (r *AccountRepo) FindByParentID(ctx echo.Context, parentId string) ([]*models.Record, error) {
+	records, err := r.Dao.FindRecordsByFilter(
+		domain.TableName,
+		"parent_id = {:parent_id}",
+		"-username",
+		-1,
+		0,
+		dbx.Params{"parent_id": parentId},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("there was an error fetching attached accounts: %w", err)
 	}
-
-	return accounts, nil*/
-	return nil, nil
+	return records, nil
 }
 
 func (r *AccountRepo) LoadFromAccount(record *models.Record, account *model.Account) error {

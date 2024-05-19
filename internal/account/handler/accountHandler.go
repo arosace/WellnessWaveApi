@@ -42,14 +42,14 @@ func (h *AccountHandler) HandleAddAccount(c echo.Context) error {
 
 	account.Username = account.FirstName + " " + account.LastName
 
-	_, err := h.accountService.AddAccount(c, account)
-
+	newlyCreatedAccount, err := h.accountService.AddAccount(c, account)
 	if err != nil {
 		res.Error = fmt.Sprintf("failed_to_add_account: %v", err)
 		return apis.NewApiError(http.StatusInternalServerError, res.Error, res)
 	}
 
-	res.Data = account
+	newlyCreatedAccount.Set("encrypted_password", "")
+	res.Data = newlyCreatedAccount
 
 	return c.JSON(http.StatusCreated, res)
 }
@@ -209,6 +209,7 @@ func (h *AccountHandler) HandleLogIn(ctx echo.Context) error {
 		return apis.NewUnauthorizedError(res.Error, nil)
 	}
 
+	authorizedAccount.Set("encrypted_password", "")
 	res.Data = authorizedAccount
 	return ctx.JSON(http.StatusOK, res)
 }

@@ -7,10 +7,12 @@ import (
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/daos"
 )
 
 type EventService struct {
 	App            *pocketbase.PocketBase
+	Dao            *daos.Dao
 	ServiceHandler *handler.EventHandler
 }
 

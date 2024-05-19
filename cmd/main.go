@@ -9,11 +9,13 @@ import (
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
 
 	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 type Service interface {
 	Init()
 	RegisterEndpoints()
+	RegisterHooks()
 }
 
 // ServiceSetup holds all the services and their handlers for the application.
@@ -26,7 +28,10 @@ type ServiceSetup struct {
 func main() {
 	app := pocketbase.New()
 
-	initializeServices(app)
+	app.OnAfterBootstrap().Add(func(e *core.BootstrapEvent) error {
+		initializeServices(app)
+		return nil
+	})
 
 	// Start the HTTP server
 	log.Println("Starting server on port 8090...")
@@ -41,6 +46,13 @@ func initializeServices(app *pocketbase.PocketBase) {
 	mailer := app.NewMailClient()
 	// initialize dao
 	dao := app.Dao()
+
+	if mailer == nil {
+		log.Fatal("mailer was not initiated properly")
+	}
+	if dao == nil {
+		log.Fatal("dao was not initiated properly")
+	}
 
 	//initialize encryptor
 	encryptor := &encryption.Encryptor{
@@ -59,7 +71,10 @@ func initializeServices(app *pocketbase.PocketBase) {
 	log.Println("Account service is up")
 
 	//initialize event service
-	eventServ := event.EventService{App: app}
+	eventServ := event.EventService{
+		App: app,
+		Dao: dao,
+	}
 	eventServ.Init()
 
 	log.Println("Event service is up")

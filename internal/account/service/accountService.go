@@ -18,7 +18,7 @@ type AccountService interface {
 	AddAccount(ctx echo.Context, account model.Account) (*models.Record, error)
 	GetAccounts(ctx echo.Context) ([]*models.Record, error)
 	GetAccountById(ctx echo.Context, id string) (*models.Record, error)
-	GetAttachedAccounts(ctx echo.Context, parentId string) ([]*model.Account, error)
+	GetAttachedAccounts(ctx echo.Context, parentId string) ([]*models.Record, error)
 	GetAccountByEmail(ctx echo.Context, email string) (*models.Record, error)
 	CheckAccountExists(ctx echo.Context, email string) bool
 	AttachAccount(ctx echo.Context, accountToAttach model.AttachAccountBody) (*models.Record, error)
@@ -45,7 +45,7 @@ func (s *accountService) AddAccount(ctx echo.Context, account model.Account) (*m
 	if err != nil {
 		return nil, errors.New("error when encrypting password")
 	}
-	account.Password = encryptedPassword
+	account.EncryptedPassword = encryptedPassword
 	return s.accountRepository.Add(ctx, account)
 }
 
@@ -141,7 +141,7 @@ func (s *accountService) GetAccountById(ctx echo.Context, id string) (*models.Re
 	return account, nil
 }
 
-func (s *accountService) GetAttachedAccounts(ctx echo.Context, parentId string) ([]*model.Account, error) {
+func (s *accountService) GetAttachedAccounts(ctx echo.Context, parentId string) ([]*models.Record, error) {
 	return s.accountRepository.FindByParentID(ctx, parentId)
 }
 
@@ -206,10 +206,11 @@ func (s *accountService) Authorize(ctx echo.Context, credentials model.LogInCred
 	if err != nil {
 		return nil, err
 	}
-	if !account.GetBool("verified") {
+	if !account.Verified() {
 		return nil, errors.New("account_not_verified")
 	}
-	decryptedPassword, err := s.encryptor.Decrypt(account.GetString("account_password"))
+
+	decryptedPassword, err := s.encryptor.Decrypt(account.GetString("encrypted_password"))
 	if err != nil {
 		return nil, err
 	}

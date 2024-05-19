@@ -6,19 +6,21 @@ import (
 	"strings"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
+	"github.com/arosace/WellnessWaveApi/pkg/utils"
 )
 
 // Account represents a account in the system.
 type Account struct {
-	ID        string `json:"id,omitempty"`
-	ParentID  string `json:"parent_id"`
-	Role      string `json:"role"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"account_password"`
-	AuthKey   string `json:"auth_key"`
-	Username  string `json:"username"`
+	ID                string `json:"id,omitempty"`
+	ParentID          string `json:"parent_id"`
+	Role              string `json:"role"`
+	FirstName         string `json:"first_name"`
+	LastName          string `json:"last_name"`
+	Email             string `json:"email"`
+	Password          string `json:"password"`
+	EncryptedPassword string `json:"encrypted_password"`
+	AuthKey           string `json:"auth_key"`
+	Username          string `json:"username"`
 }
 
 type VerifyAccount struct {
@@ -41,11 +43,15 @@ func (m *Account) ValidateModel() error {
 		errorStrings = append(errorStrings, "role")
 	}
 	if m.Password == "" {
-		errorStrings = append(errorStrings, "account_password")
+		errorStrings = append(errorStrings, "password")
 	}
 
 	if len(errorStrings) > 0 {
 		return fmt.Errorf("missing_data: %s", strings.Join(errorStrings, ", "))
+	}
+
+	if !utils.PasswordIsValid(m.Password) {
+		return errors.New("invalid_password")
 	}
 
 	if m.Role != domain.HealthSpecialistRole && m.Role != domain.PatientRole {
