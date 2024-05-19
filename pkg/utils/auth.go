@@ -24,9 +24,10 @@ func GenerateVerificationToken(email string) (string, error) {
 	return token.SignedString(jwtSecret)
 }
 
-func GeneratePatientVerificationToken(email string, oldPassword string) (string, error) {
+func GeneratePatientVerificationToken(email string, oldPassword string, id string) (string, error) {
 	customData := map[string]interface{}{
 		"old_password": oldPassword,
+		"id":           id,
 	}
 
 	// Create the custom claims

@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
@@ -59,7 +60,12 @@ func (s *accountService) VerifyAccount(ctx echo.Context, email string) (*models.
 		return nil, err
 	}
 
-	err = s.accountRepository.UpdateVerify(ctx, record)
+	if !record.Verified() {
+		err = s.accountRepository.UpdateVerify(ctx, record)
+		if err != nil {
+			return nil, fmt.Errorf("there was an error verifying the account: %w", err)
+		}
+	}
 
 	return record, nil
 }
@@ -92,23 +98,30 @@ func (s *accountService) AttachAccount(ctx echo.Context, accountToAttach model.A
 	//check if accountToAttach exists
 	account, err = s.GetAccountByEmail(ctx, accountToAttach.Email)
 	if err != nil && err.Error() != "not_found" {
-		return nil, err
+		return nil, fmt.Errorf("there was an error retrieving account by email: %w", err)
 	}
+
 	//if it does not exist create account and attach
 	//account will be created with random password, this will need to be changed by patient
-	if account.Id == "" {
+	if account == nil {
 		randPassword, err := utils.GenerateRandomPassword(8)
 		if err != nil {
 			return nil, errors.New("error generating eandom password for attached account")
 		}
+		encryptedRandPassword, err := s.encryptor.Encrypt(randPassword)
+		if err != nil {
+			return nil, errors.New("error encrypting random password for attached account")
+		}
 
 		newAccount, err := s.accountRepository.Add(ctx, model.Account{
-			FirstName: accountToAttach.FirstName,
-			LastName:  accountToAttach.LastName,
-			Email:     accountToAttach.Email,
-			Role:      domain.PatientRole,
-			ParentID:  accountToAttach.ParentID,
-			Password:  randPassword,
+			FirstName:         accountToAttach.FirstName,
+			LastName:          accountToAttach.LastName,
+			Email:             accountToAttach.Email,
+			Role:              domain.PatientRole,
+			ParentID:          accountToAttach.ParentID,
+			Password:          randPassword,
+			EncryptedPassword: encryptedRandPassword,
+			Username:          fmt.Sprintf("%s %s", accountToAttach.FirstName, accountToAttach.LastName),
 		})
 		if err != nil {
 			return nil, err
@@ -182,7 +195,14 @@ func (s *accountService) UpdateAccount(ctx echo.Context, account model.Account, 
 		return s.accountRepository.Update(ctx, oldAccount)
 	}
 
-	if account.Password != oldAccount.GetString("password") {
+	log.Println(oldAccount.GetString("encrypted_password"))
+	decryptedOldPassword, err := s.encryptor.Decrypt(oldAccount.GetString("encrypted_password"))
+	log.Println(decryptedOldPassword, account.Password)
+	if err != nil {
+		return nil, fmt.Errorf("error decrypting old account password: %w", err)
+	}
+
+	if account.Password != decryptedOldPassword {
 		isToUpdate = true
 		if utils.PasswordIsValid(account.Password) {
 			encryptedPassword, err := s.encryptor.Encrypt(account.Password)
@@ -200,11 +220,11 @@ func (s *accountService) UpdateAccount(ctx echo.Context, account model.Account, 
 		oldAccount.SetEmail(account.Email)
 	}
 
-	if !isToUpdate {
-		return oldAccount, nil
+	if isToUpdate {
+		return s.accountRepository.Update(ctx, oldAccount)
 	}
 
-	return s.accountRepository.Update(ctx, oldAccount)
+	return oldAccount, nil
 }
 
 func (s *accountService) Authorize(ctx echo.Context, credentials model.LogInCredentials) (*models.Record, error) {

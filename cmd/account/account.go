@@ -93,6 +93,7 @@ func (s AccountService) RegisterHooks() {
 				record.GetString("username"),
 				record.GetString("email"),
 				record.GetString("encrypted_password"),
+				record.Id,
 			); err != nil {
 				return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("Failed to send email:%s", err.Error()), err)
 			}

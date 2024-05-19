@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
@@ -42,6 +43,12 @@ func (r *AccountRepo) Add(ctx echo.Context, account model.Account) (*models.Reco
 	record := models.NewRecord(collection)
 	r.LoadFromAccount(record, &account)
 	record.SetPassword(account.Password)
+	if account.Role == domain.PatientRole {
+		err := record.SetEmailVisibility(true)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to set email visibility for patient: %w", err)
+		}
+	}
 
 	if err := r.Dao.SaveRecord(record); err != nil {
 		return nil, fmt.Errorf("Failed to save account: %w", err)
@@ -85,13 +92,14 @@ func (r *AccountRepo) FindByID(ctx echo.Context, id string) (*models.Record, err
 // FindByEmail returns a account by their email.
 func (r *AccountRepo) FindByEmail(ctx echo.Context, email string) (*models.Record, error) {
 	record, err := r.Dao.FindAuthRecordByEmail(domain.TableName, email)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "no rows in result set") {
 		return nil, fmt.Errorf("Could not retrieve record by email: %w", err)
 	}
 
-	if record.BaseModel.Id == "" {
+	if err != nil {
 		return nil, errors.New("not_found")
 	}
+
 	return record, nil
 }
 

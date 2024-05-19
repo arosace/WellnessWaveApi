@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
@@ -104,10 +103,6 @@ func (h *AccountHandler) HandleGetAccountsById(c echo.Context) error {
 		return apis.NewBadRequestError(res.Error, res)
 	}
 
-	if _, err := strconv.ParseInt(id, 10, 32); err != nil {
-		res.Error = "unexpected http parameter"
-		return apis.NewBadRequestError(res.Error, res)
-	}
 	account, err := h.accountService.GetAccountById(c, id)
 	if err != nil {
 		res.Error = fmt.Sprintf("Failed to get account [%s]: %v", id, err)
@@ -148,10 +143,6 @@ func (h *AccountHandler) HandleGetAttachedAccounts(ctx echo.Context) error {
 		res.Error = "parameter parent_id is missing"
 		return apis.NewBadRequestError(res.Error, nil)
 	}
-	if _, err := strconv.ParseInt(parentId, 10, 32); err != nil {
-		res.Error = "unexpected http parameter"
-		return apis.NewBadRequestError(res.Error, nil)
-	}
 
 	attachedAccounts, err := h.accountService.GetAttachedAccounts(ctx, parentId)
 	if err != nil {
@@ -164,7 +155,8 @@ func (h *AccountHandler) HandleGetAttachedAccounts(ctx echo.Context) error {
 }
 
 func (h *AccountHandler) HandleUpdateAccount(ctx echo.Context) error {
-	infoType := ctx.QueryParam("search")
+	res := model.AccountResponse{}
+	infoType := ctx.QueryParam("infoType")
 	if infoType == "" || (infoType != "personal" && infoType != "authentication") {
 		return apis.NewBadRequestError(fmt.Sprintf("type url parameter is either missing or invalid. Got: %s. Expected either 'personal' or 'authentication'", infoType), nil)
 	}
@@ -189,7 +181,7 @@ func (h *AccountHandler) HandleUpdateAccount(ctx echo.Context) error {
 		return apis.NewApiError(http.StatusInternalServerError, fmt.Sprintf("Failed to update account: %v", err), nil)
 	}
 
-	return ctx.JSON(http.StatusOK, nil)
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func (h *AccountHandler) HandleLogIn(ctx echo.Context) error {
