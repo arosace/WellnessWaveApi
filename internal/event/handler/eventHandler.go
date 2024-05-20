@@ -92,7 +92,7 @@ func (h *EventHandler) HandleRescheduleEvent(ctx echo.Context) error {
 	rescheduledEvent, err := h.eventService.RescheduleEvent(ctx, rescheduleRequest)
 	if err != nil {
 		if utils.IsErrorNotFound(err) {
-			return apis.NewApiError(http.StatusNotFound, "Failed to reschedule event: no event with that id was found", nil)
+			return apis.NewApiError(http.StatusNotFound, fmt.Sprintf("Failed to reschedule event: no event with id [%s] was found", rescheduleRequest.EventID), nil)
 		}
 		return apis.NewBadRequestError(fmt.Sprintf("Failed to reschedule event: %s", err.Error()), nil)
 	}

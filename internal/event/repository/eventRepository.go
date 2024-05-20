@@ -3,7 +3,6 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/arosace/WellnessWaveApi/internal/event/domain"
 	"github.com/arosace/WellnessWaveApi/internal/event/model"
@@ -21,7 +20,8 @@ type EventRepository interface {
 	Add(ctx echo.Context, event model.Event) (*models.Record, error)
 	GetByHealthSpecialistId(echo.Context, string, string) ([]*models.Record, error)
 	GetByPatientId(echo.Context, string, string) ([]*models.Record, error)
-	Update(echo.Context, model.RescheduleRequest) (*models.Record, error)
+	Update(echo.Context, *models.Record) (*models.Record, error)
+	GetById(echo.Context, string) (*models.Record, error)
 }
 
 func NewEventRepository(dao *daos.Dao) *EventRepo {
@@ -93,22 +93,15 @@ func (r *EventRepo) GetByPatientId(ctx echo.Context, patientId string, after str
 	return records, nil
 }
 
-func (r *EventRepo) Update(ctx echo.Context, rescheduleRequest model.RescheduleRequest) (*models.Record, error) {
-	record, err := r.Dao.FindRecordById(domain.TABLENAME, rescheduleRequest.EventID)
+func (r *EventRepo) GetById(ctx echo.Context, id string) (*models.Record, error) {
+	record, err := r.Dao.FindRecordById(domain.TABLENAME, id)
 	if err != nil {
-		return nil, fmt.Errorf("there was an error retrieving event by id: %w", err)
+		return nil, fmt.Errorf("there was an error retrieving event [%s]: %w", id, err)
 	}
+	return record, nil
+}
 
-	parsedTime, err := time.Parse(domain.Layout, rescheduleRequest.NewDate)
-	if err != nil {
-		return nil, fmt.Errorf("there was an parsing date: %w", err)
-	}
-	isSame := record.GetDateTime("event_date").Time().Compare(parsedTime) == 0
-	if isSame {
-		return record, nil
-	}
-
-	record.Set("event_date", rescheduleRequest.NewDate)
+func (r *EventRepo) Update(ctx echo.Context, record *models.Record) (*models.Record, error) {
 	record.MarkAsNotNew()
 	if err := r.Dao.SaveRecord(record); err != nil {
 		return nil, fmt.Errorf("there was an error rescheduling event: %w", err)
