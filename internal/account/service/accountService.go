@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
@@ -195,9 +194,7 @@ func (s *accountService) UpdateAccount(ctx echo.Context, account model.Account, 
 		return s.accountRepository.Update(ctx, oldAccount)
 	}
 
-	log.Println(oldAccount.GetString("encrypted_password"))
 	decryptedOldPassword, err := s.encryptor.Decrypt(oldAccount.GetString("encrypted_password"))
-	log.Println(decryptedOldPassword, account.Password)
 	if err != nil {
 		return nil, fmt.Errorf("error decrypting old account password: %w", err)
 	}

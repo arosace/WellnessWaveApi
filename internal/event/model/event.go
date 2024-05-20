@@ -6,7 +6,7 @@ import (
 )
 
 type Event struct {
-	ID                 string `json:"id"`
+	ID                 string `json:"id,omitempty"`
 	HealthSpecialistID string `json:"health_specialist_id"`
 	PatientID          string `json:"patient_id"`
 	EventType          string `json:"event_type"`

@@ -8,8 +8,10 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/account/handler"
 	"github.com/arosace/WellnessWaveApi/internal/account/repository"
 	"github.com/arosace/WellnessWaveApi/internal/account/service"
+	eventDomain "github.com/arosace/WellnessWaveApi/internal/event/domain"
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	encryption "github.com/arosace/WellnessWaveApi/pkg/utils"
+	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -19,11 +21,12 @@ import (
 )
 
 type AccountService struct {
-	App            *pocketbase.PocketBase
-	Encryptor      *encryption.Encryptor
-	ServiceHandler *handler.AccountHandler
-	Mailer         mailer.Mailer
-	Dao            *daos.Dao
+	App                  *pocketbase.PocketBase
+	Encryptor            *encryption.Encryptor
+	ServiceHandler       *handler.AccountHandler
+	RepositoryInteractor *repository.AccountRepo
+	Mailer               mailer.Mailer
+	Dao                  *daos.Dao
 }
 
 func (s AccountService) Init() {
@@ -34,6 +37,7 @@ func (s AccountService) Init() {
 	// Initialize all handlers with their respective services
 	accountServiceHandler := handler.NewAccountHandler(accountService)
 	s.ServiceHandler = accountServiceHandler
+	s.RepositoryInteractor = accountRepo
 	s.RegisterEndpoints()
 	s.RegisterHooks()
 }
@@ -74,13 +78,13 @@ func (s AccountService) RegisterEndpoints() {
 }
 
 func (s AccountService) RegisterHooks() {
+	// listens for changes to the "accounts" table and acts accordingly (sends an email to the newly created account)
 	s.App.OnModelAfterCreate(domain.TableName).Add(func(e *core.ModelEvent) error {
 		record := e.Model.(*models.Record)
 		switch record.GetString("role") {
 		case domain.HealthSpecialistRole:
 			if err := utils.SendVerifyAccountHealthSpecialistEmail(
 				s.Mailer,
-				"hello@noreply.com",
 				record.GetString("username"),
 				record.GetString("email"),
 			); err != nil {
@@ -89,7 +93,6 @@ func (s AccountService) RegisterHooks() {
 		case domain.PatientRole:
 			if err := utils.SendVerifyAccountPatientEmail(
 				s.Mailer,
-				"hello@noreply.com",
 				record.GetString("username"),
 				record.GetString("email"),
 				record.GetString("encrypted_password"),
@@ -100,6 +103,51 @@ func (s AccountService) RegisterHooks() {
 		default:
 			return nil
 		}
+		return nil
+	})
+
+	// listens for changes to the "events" table and acts accordingly (checks if health specialist id and patient id exist)
+	s.App.OnModelBeforeCreate(eventDomain.TABLENAME).Add(func(e *core.ModelEvent) error {
+		record := e.Model.(*models.Record)
+		ctx := &echo.DefaultContext{}
+		_, err := s.RepositoryInteractor.FindByID(ctx, record.GetString("health_specialist_id"))
+		if err != nil {
+			if utils.IsErrorNotFound(err) {
+				return apis.NewApiError(http.StatusNotFound, "event was not created because health specialist id does not exist", err)
+			}
+			return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("there was an error verifyin that health specialist id exists:%s", err.Error()), err)
+		}
+		_, err = s.RepositoryInteractor.FindByID(ctx, record.GetString("patient_id"))
+		if err != nil {
+			if utils.IsErrorNotFound(err) {
+				return apis.NewApiError(http.StatusNotFound, "event was not created because patient does not exist", err)
+			}
+			return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("there was an error verifyin that patient id exists:%s", err.Error()), err)
+		}
+		return nil
+	})
+
+	// listens for changes to the "events" table and acts accordingly (sends reminder email to patient about call)
+	s.App.OnModelAfterCreate(eventDomain.TABLENAME).Add(func(e *core.ModelEvent) error {
+		event := e.Model.(*models.Record)
+		ctx := &echo.DefaultContext{}
+		patient, err := s.RepositoryInteractor.FindByID(ctx, event.GetString("patient_id"))
+		if err != nil {
+			if utils.IsErrorNotFound(err) {
+				return apis.NewApiError(http.StatusNotFound, "event was not created because patient does not exist", err)
+			}
+			return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("there was an error verifyin that patient id exists:%s", err.Error()), err)
+		}
+
+		utils.SendEventEmailToPatient(
+			s.Mailer,
+			patient.GetString("username"),
+			patient.Email(),
+			event,
+		)
+
+		// TODO: Send email to patient with calendar event and call link
+		fmt.Println(event)
 		return nil
 	})
 }

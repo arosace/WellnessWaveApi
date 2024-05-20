@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/arosace/WellnessWaveApi/internal/account/domain"
 	"github.com/arosace/WellnessWaveApi/internal/account/model"
+	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/daos"
@@ -92,7 +92,7 @@ func (r *AccountRepo) FindByID(ctx echo.Context, id string) (*models.Record, err
 // FindByEmail returns a account by their email.
 func (r *AccountRepo) FindByEmail(ctx echo.Context, email string) (*models.Record, error) {
 	record, err := r.Dao.FindAuthRecordByEmail(domain.TableName, email)
-	if err != nil && !strings.Contains(err.Error(), "no rows in result set") {
+	if err != nil && !utils.IsErrorNotFound(err) {
 		return nil, fmt.Errorf("Could not retrieve record by email: %w", err)
 	}
 

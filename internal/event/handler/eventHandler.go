@@ -34,11 +34,12 @@ func (h *EventHandler) HandleScheduleEvent(ctx echo.Context) error {
 		return apis.NewBadRequestError(err.Error(), nil)
 	}
 
-	if _, err := h.eventService.ScheduleEvent(ctx, event); err != nil {
+	scheduledEvent, err := h.eventService.ScheduleEvent(ctx, event)
+	if err != nil {
 		return apis.NewBadRequestError(fmt.Sprintf("Failed to add event due to: %v", err), nil)
 	}
 
-	res.Data = event
+	res.Data = scheduledEvent
 	return ctx.JSON(http.StatusCreated, res)
 }
 
