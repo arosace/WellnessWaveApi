@@ -2,8 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"net/http"
-	"strings"
 
 	"github.com/arosace/WellnessWaveApi/internal/planner/domain"
 	"github.com/arosace/WellnessWaveApi/internal/planner/model"
@@ -190,16 +188,19 @@ func (r *PlannerRepo) AddPlanInTransaction(ctx echo.Context, plan *model.Plan) (
 		p, err := r.GetPlanByPatientId(ctx, plan.PatientId)
 		if err != nil {
 			if !utils.IsErrorNotFound(err) {
+				r.Dao = oldDao
 				return err
 			}
 		}
 		if p != nil {
+			r.Dao = oldDao
 			return fmt.Errorf("the patient [%s] already has a meal plan", plan.PatientId)
 		}
 
 		// create plan record
 		planRecord, err := r.AddPlan(ctx, plan)
 		if err != nil {
+			r.Dao = oldDao
 			return err
 		}
 
@@ -209,24 +210,34 @@ func (r *PlannerRepo) AddPlanInTransaction(ctx echo.Context, plan *model.Plan) (
 			dailyPlan.HealthSpecialistId = plan.HealthSpecialistId
 			dailyPlanRecord, err := r.AddDailyPlan(ctx, dailyPlan)
 			if err != nil {
+				r.Dao = oldDao
 				return err
 			}
 			for _, meal := range dailyPlan.Meals {
 				// store each meal in DB if it does not already exist for the specific health specialist
 				meal.HealthSpecialistId = plan.HealthSpecialistId
-				mealRecord, err := r.AddMeal(ctx, meal)
+				mealRecord, err := r.GetMealByNameAndHealthSpecialistId(ctx, meal.Name, plan.HealthSpecialistId)
 				if err != nil {
-					if strings.Contains(err.Error(), fmt.Sprintf("%d", http.StatusFound)) {
-						continue
+					if !utils.IsErrorNotFound(err) {
+						return err
 					}
-					return err
 				}
+				if mealRecord == nil {
+					meal, err := r.AddMeal(ctx, meal)
+					if err != nil {
+						r.Dao = oldDao
+						return err
+					}
+					mealRecord = meal
+				}
+
 				// store mapping of meal to daily plan
 				mealMap.MealId = mealRecord.Id
 				mealMap.DailyPlanId = dailyPlanRecord.Id
 				mealMap.PlanId = planRecord.Id
 				_, err = r.MapMealToPlan(ctx, mealMap)
 				if err != nil {
+					r.Dao = oldDao
 					return err
 				}
 			}
