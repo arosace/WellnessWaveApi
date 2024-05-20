@@ -4,13 +4,14 @@ import (
 	"github.com/arosace/WellnessWaveApi/internal/event/model"
 	"github.com/arosace/WellnessWaveApi/internal/event/repository"
 	"github.com/labstack/echo/v5"
+	"github.com/pocketbase/pocketbase/models"
 )
 
 type EventService interface {
-	ScheduleEvent(echo.Context, model.Event) (*model.Event, error)
-	GetEventsByHealthSpecialistId(echo.Context, string, string) ([]*model.Event, error)
-	GetEventsByPatientId(echo.Context, string, string) ([]*model.Event, error)
-	RescheduleEvent(echo.Context, model.RescheduleRequest) (*model.Event, error)
+	ScheduleEvent(echo.Context, model.Event) (*models.Record, error)
+	GetEventsByHealthSpecialistId(echo.Context, string, string) ([]*models.Record, error)
+	GetEventsByPatientId(echo.Context, string, string) ([]*models.Record, error)
+	RescheduleEvent(echo.Context, model.RescheduleRequest) (*models.Record, error)
 }
 
 type eventService struct {
@@ -23,18 +24,18 @@ func NewEventService(eventRepo repository.EventRepository) EventService {
 	}
 }
 
-func (e *eventService) ScheduleEvent(ctx echo.Context, event model.Event) (*model.Event, error) {
+func (e *eventService) ScheduleEvent(ctx echo.Context, event model.Event) (*models.Record, error) {
 	return e.eventRepository.Add(ctx, event)
 }
 
-func (e *eventService) GetEventsByHealthSpecialistId(ctx echo.Context, healthSpecialistId string, after string) ([]*model.Event, error) {
+func (e *eventService) GetEventsByHealthSpecialistId(ctx echo.Context, healthSpecialistId string, after string) ([]*models.Record, error) {
 	return e.eventRepository.GetByHealthSpecialistId(ctx, healthSpecialistId, after)
 }
 
-func (e *eventService) GetEventsByPatientId(ctx echo.Context, patientId string, after string) ([]*model.Event, error) {
+func (e *eventService) GetEventsByPatientId(ctx echo.Context, patientId string, after string) ([]*models.Record, error) {
 	return e.eventRepository.GetByPatientId(ctx, patientId, after)
 }
 
-func (e *eventService) RescheduleEvent(ctx echo.Context, rescheduleRequest model.RescheduleRequest) (*model.Event, error) {
+func (e *eventService) RescheduleEvent(ctx echo.Context, rescheduleRequest model.RescheduleRequest) (*models.Record, error) {
 	return e.eventRepository.Update(ctx, rescheduleRequest)
 }

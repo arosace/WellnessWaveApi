@@ -10,6 +10,7 @@ import (
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/pocketbase/apis"
+	"github.com/pocketbase/pocketbase/models"
 )
 
 type EventHandler struct {
@@ -43,7 +44,7 @@ func (h *EventHandler) HandleScheduleEvent(ctx echo.Context) error {
 
 func (h *EventHandler) HandleGetEvents(ctx echo.Context) error {
 	res := model.EventResponse{}
-	var events []*model.Event
+	var events []*models.Record
 	var err error
 
 	healthSpecialistId := ctx.QueryParam("healthSpecialistId")
@@ -95,7 +96,7 @@ func (h *EventHandler) HandleRescheduleEvent(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (h *EventHandler) getEventsByHealthSpecialistId(ctx echo.Context, id string, after string) ([]*model.Event, error) {
+func (h *EventHandler) getEventsByHealthSpecialistId(ctx echo.Context, id string, after string) ([]*models.Record, error) {
 	events, err := h.eventService.GetEventsByHealthSpecialistId(ctx, id, after)
 	if err != nil {
 		return nil, errors.New("Failed to retrieve events")
@@ -103,7 +104,7 @@ func (h *EventHandler) getEventsByHealthSpecialistId(ctx echo.Context, id string
 	return events, nil
 }
 
-func (h *EventHandler) getEventsByPatientId(ctx echo.Context, id string, after string) ([]*model.Event, error) {
+func (h *EventHandler) getEventsByPatientId(ctx echo.Context, id string, after string) ([]*models.Record, error) {
 	events, err := h.eventService.GetEventsByPatientId(ctx, id, after)
 	if err != nil {
 		return nil, errors.New("Failed to retrieve events")

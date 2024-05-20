@@ -8,7 +8,9 @@
 │   ├── service1  # Entry point for the first service
 │   │   └── main.go
 │   │
-│   └── service2  
+│   └── service2
+│   │
+|   └── main.go #Entry point for the application
 │
 ├── internal
 │   ├── service1  # Internal package for the first service
@@ -42,3 +44,12 @@
     └── service2  # Tests specific to service2
         └── ...
 ```
+
+### Run Locally
+
+Navigate to the ```cmd``` directory and use the ```go run main.go serve``` command
+The command will spin up two services:
+- the api at localhost:8090/api
+- the admin dashboard at localhost:8090/_/
+
+In order to access the admin dashboard you will need to register yourself.
