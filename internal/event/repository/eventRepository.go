@@ -3,6 +3,7 @@ package repository
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/arosace/WellnessWaveApi/internal/event/domain"
 	"github.com/arosace/WellnessWaveApi/internal/event/model"
@@ -97,7 +98,18 @@ func (r *EventRepo) Update(ctx echo.Context, rescheduleRequest model.RescheduleR
 	if err != nil {
 		return nil, fmt.Errorf("there was an error retrieving event by id: %w", err)
 	}
+
+	parsedTime, err := time.Parse(domain.Layout, rescheduleRequest.NewDate)
+	if err != nil {
+		return nil, fmt.Errorf("there was an parsing date: %w", err)
+	}
+	isSame := record.GetDateTime("event_date").Time().Compare(parsedTime) == 0
+	if isSame {
+		return record, nil
+	}
+
 	record.Set("event_date", rescheduleRequest.NewDate)
+	record.MarkAsNotNew()
 	if err := r.Dao.SaveRecord(record); err != nil {
 		return nil, fmt.Errorf("there was an error rescheduling event: %w", err)
 	}

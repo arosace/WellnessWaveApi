@@ -105,3 +105,24 @@ func SendEventEmailToPatient(mailClient mailer.Mailer, toName string, toEmail st
 		`, day, monthMap[int(month)], year, hour, minute),
 	})
 }
+
+func SendRescheduleEventEmailToPatient(mailClient mailer.Mailer, toName string, toEmail string, eventRecord *models.Record) error {
+	dateAndTime := eventRecord.GetDateTime("event_date").Time()
+	day, month, year, hour, minute := dateAndTime.Day(), dateAndTime.Month(), dateAndTime.Year(), dateAndTime.Hour(), dateAndTime.Minute()
+
+	return mailClient.Send(&mailer.Message{
+		From: mail.Address{
+			Address: "hello@noreply.com",
+		},
+		To:      []mail.Address{{Name: toName, Address: toEmail}},
+		Subject: "Event Reminder",
+		HTML: fmt.Sprintf(`
+			<p>Hello,</p>
+			<p>Your practitioner has re-scheduled an event with you.</p>
+			<p>See you on the %d of %s %d at %d:%d!</p>
+			Thanks,<br/>
+			WellnessWave team
+			</p>
+		`, day, monthMap[int(month)], year, hour, minute),
+	})
+}

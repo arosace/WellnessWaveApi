@@ -139,15 +139,39 @@ func (s AccountService) RegisterHooks() {
 			return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("there was an error verifyin that patient id exists:%s", err.Error()), err)
 		}
 
-		utils.SendEventEmailToPatient(
+		err = utils.SendEventEmailToPatient(
 			s.Mailer,
 			patient.GetString("username"),
 			patient.Email(),
 			event,
 		)
+		if err != nil {
+			return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("Failed to send email:%s", err.Error()), err)
+		}
+		return nil
+	})
 
-		// TODO: Send email to patient with calendar event and call link
-		fmt.Println(event)
+	// listens for updates to the "events" table and acts accordingly (sends reminder email to patient about call)
+	s.App.OnModelAfterUpdate(eventDomain.TABLENAME).Add(func(e *core.ModelEvent) error {
+		event := e.Model.(*models.Record)
+		ctx := &echo.DefaultContext{}
+		patient, err := s.RepositoryInteractor.FindByID(ctx, event.GetString("patient_id"))
+		if err != nil {
+			if utils.IsErrorNotFound(err) {
+				return apis.NewApiError(http.StatusNotFound, "event was not created because patient does not exist", err)
+			}
+			return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("there was an error verifyin that patient id exists:%s", err.Error()), err)
+		}
+
+		err = utils.SendRescheduleEventEmailToPatient(
+			s.Mailer,
+			patient.GetString("username"),
+			patient.Email(),
+			event,
+		)
+		if err != nil {
+			return apis.NewApiError(http.StatusBadRequest, fmt.Sprintf("Failed to send email:%s", err.Error()), err)
+		}
 		return nil
 	})
 }

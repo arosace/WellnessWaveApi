@@ -58,15 +58,16 @@ func (h *EventHandler) HandleGetEvents(ctx echo.Context) error {
 
 	if healthSpecialistId != "" {
 		events, err = h.getEventsByHealthSpecialistId(ctx, healthSpecialistId, after)
+		if err != nil {
+			return apis.NewBadRequestError(fmt.Sprintf("There was an error retrieving events by specialist id: %s", err.Error()), nil)
+		}
 	}
 
 	if patientId != "" {
 		events, err = h.getEventsByPatientId(ctx, patientId, after)
-	}
-
-	if err != nil {
-		res.Error = err.Error()
-		return apis.NewBadRequestError(res.Error, nil)
+		if err != nil {
+			return apis.NewBadRequestError(fmt.Sprintf("There was an error retrieving events by patient id: %s", err.Error()), nil)
+		}
 	}
 
 	if events == nil {
@@ -90,7 +91,10 @@ func (h *EventHandler) HandleRescheduleEvent(ctx echo.Context) error {
 
 	rescheduledEvent, err := h.eventService.RescheduleEvent(ctx, rescheduleRequest)
 	if err != nil {
-		return apis.NewBadRequestError("Failed to reschedule event", nil)
+		if utils.IsErrorNotFound(err) {
+			return apis.NewApiError(http.StatusNotFound, "Failed to reschedule event: no event with that id was found", nil)
+		}
+		return apis.NewBadRequestError(fmt.Sprintf("Failed to reschedule event: %s", err.Error()), nil)
 	}
 
 	res.Data = rescheduledEvent

@@ -30,6 +30,12 @@ func (s EventService) RegisterEndpoints() {
 		e.Router.POST("/api/events/schedule", s.ServiceHandler.HandleScheduleEvent, utils.EchoMiddleware)
 		return nil
 	})
+
+	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
+		e.Router.PUT("/api/events/reschedule", s.ServiceHandler.HandleRescheduleEvent, utils.EchoMiddleware)
+		return nil
+	})
+
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 		e.Router.GET("/api/events", s.ServiceHandler.HandleGetEvents, utils.EchoMiddleware)
 		return nil
