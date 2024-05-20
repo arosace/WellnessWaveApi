@@ -80,7 +80,10 @@ func initializeServices(app *pocketbase.PocketBase) {
 	log.Println("Event service is up")
 
 	//initialize planner service
-	plannerServ := planner.PlannerService{App: app}
+	plannerServ := planner.PlannerService{
+		App: app,
+		Dao: dao,
+	}
 	plannerServ.Init()
 
 	log.Println("Planner service is up")

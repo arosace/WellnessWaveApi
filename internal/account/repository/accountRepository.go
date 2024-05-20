@@ -41,7 +41,7 @@ func (r *AccountRepo) Add(ctx echo.Context, account model.Account) (*models.Reco
 	}
 
 	record := models.NewRecord(collection)
-	r.LoadFromAccount(record, &account)
+	utils.LoadFromStruct(record, &account)
 	record.SetPassword(account.Password)
 	if account.Role == domain.PatientRole {
 		err := record.SetEmailVisibility(true)

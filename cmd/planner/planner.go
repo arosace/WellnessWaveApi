@@ -7,15 +7,17 @@ import (
 	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/daos"
 )
 
 type PlannerService struct {
 	App            *pocketbase.PocketBase
+	Dao            *daos.Dao
 	ServiceHandler *handler.PlannerHandler
 }
 
 func (s PlannerService) Init() {
-	plannerRepo := repository.NewMockPlannerRepository()
+	plannerRepo := repository.NewPlannerRepository(s.Dao)
 	plannerService := service.NewEventService(plannerRepo)
 	plannerServiceHandler := handler.NewPlannerHandler(plannerService)
 	s.ServiceHandler = plannerServiceHandler

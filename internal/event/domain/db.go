@@ -1,5 +1,3 @@
 package domain
 
-const (
-	TABLENAME = "events"
-)
+var TABLENAME = "events"

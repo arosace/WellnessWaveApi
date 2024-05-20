@@ -50,9 +50,6 @@ func (p *Plan) ValidateModel() error {
 }
 
 func (dp *DailyPlan) ValidateModel() error {
-	if dp.PlanId == "" {
-		return fmt.Errorf("daily_plan_plan_id")
-	}
 	if len(dp.Meals) == 0 {
 		return fmt.Errorf("daily_plan_meals")
 	} else {

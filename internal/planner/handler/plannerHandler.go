@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/arosace/WellnessWaveApi/internal/planner/model"
 	"github.com/arosace/WellnessWaveApi/internal/planner/service"
@@ -35,18 +34,16 @@ func (h *PlannerHandler) HandleAddMeal(ctx echo.Context) error {
 		return apis.NewBadRequestError(res.Error, nil)
 	}
 
-	err := h.plannerService.AddMeal(ctx, &meal)
-	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("%d", http.StatusFound)) {
-		res.Message = "A meal with the same name already exists"
-		return apis.NewBadRequestError(err.Error(), res)
-	}
-
+	record, err := h.plannerService.AddMeal(ctx, &meal)
 	if err != nil {
-		res.Error = fmt.Sprintf("Failed to add meal due to: %v", err)
-		return apis.NewBadRequestError(res.Error, nil)
+		if utils.IsErrorFound(err) {
+			res.Message = "A meal with the same name already exists"
+			return apis.NewBadRequestError(res.Message, res)
+		}
+		return apis.NewBadRequestError(fmt.Sprintf("there was an error creating a meal: %s", err.Error()), res)
 	}
 
-	res.Data = meal
+	res.Data = record
 	return ctx.JSON(http.StatusCreated, res)
 }
 

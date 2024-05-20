@@ -21,10 +21,6 @@ func (m *Meal) ValidateModel() error {
 		errorStrings = append(errorStrings, "name")
 	}
 
-	if len(m.Ingredients) == 0 {
-		errorStrings = append(errorStrings, "ingredients")
-	}
-
 	if m.HealthSpecialistId == "" {
 		errorStrings = append(errorStrings, "health_specialist_id")
 	}

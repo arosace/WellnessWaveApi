@@ -6,6 +6,7 @@ import (
 
 	"github.com/arosace/WellnessWaveApi/internal/event/domain"
 	"github.com/arosace/WellnessWaveApi/internal/event/model"
+	"github.com/arosace/WellnessWaveApi/pkg/utils"
 	"github.com/labstack/echo/v5"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/daos"
@@ -37,7 +38,7 @@ func (r *EventRepo) Add(ctx echo.Context, event model.Event) (*models.Record, er
 	}
 
 	record := models.NewRecord(collection)
-	r.LoadFromEvent(record, &event)
+	utils.LoadFromStruct(record, &event)
 	if err := r.Dao.SaveRecord(record); err != nil {
 		return nil, fmt.Errorf("Failed to save event: %w", err)
 	}
@@ -109,7 +110,7 @@ func (r *EventRepo) Update(ctx echo.Context, record *models.Record) (*models.Rec
 	return record, nil
 }
 
-func (r *EventRepo) LoadFromEvent(record *models.Record, event *model.Event) error {
+func (r *EventRepo) LoadFromStruct(record *models.Record, event *model.Event) error {
 	data, err := json.Marshal(event)
 	if err != nil {
 		return err

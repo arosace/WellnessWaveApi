@@ -10,7 +10,7 @@ import (
 
 var mealCount, planCount, dailyPlanCount = 0, 0, 0
 
-const layout = "2006-01-02--15:04"
+var layout = "2006-01-02--15:04"
 
 // MockUserRepository is a mock implementation of UserRepository that stores user data in memory.
 type MockPlannerRepository struct {
