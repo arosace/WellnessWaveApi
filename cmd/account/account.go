@@ -44,35 +44,35 @@ func (s AccountService) Init() {
 
 func (s AccountService) RegisterEndpoints() {
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/api/accounts", s.ServiceHandler.HandleGetAccounts, utils.EchoMiddleware)
+		e.Router.GET("/v1/accounts", s.ServiceHandler.HandleGetAccounts, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/api/accounts/register", s.ServiceHandler.HandleAddAccount, utils.EchoMiddleware)
+		e.Router.POST("/v1/accounts/register", s.ServiceHandler.HandleAddAccount, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.PUT("/api/accounts/verify", s.ServiceHandler.HandleVerifyAccount, utils.EchoMiddleware)
+		e.Router.PUT("/v1/accounts/verify", s.ServiceHandler.HandleVerifyAccount, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/api/accounts/:id", s.ServiceHandler.HandleGetAccountsById, utils.EchoMiddleware)
+		e.Router.GET("/v1/accounts/:id", s.ServiceHandler.HandleGetAccountsById, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/api/accounts/attach", s.ServiceHandler.HandleAttachAccount, utils.EchoMiddleware)
+		e.Router.POST("/v1/accounts/attach", s.ServiceHandler.HandleAttachAccount, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/api/accounts/attached/:parent_id", s.ServiceHandler.HandleGetAttachedAccounts, utils.EchoMiddleware)
+		e.Router.GET("/v1/accounts/attached/:parent_id", s.ServiceHandler.HandleGetAttachedAccounts, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.PUT("/api/accounts/update", s.ServiceHandler.HandleUpdateAccount, utils.EchoMiddleware)
+		e.Router.PUT("/v1/accounts/update", s.ServiceHandler.HandleUpdateAccount, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/api/accounts/login", s.ServiceHandler.HandleLogIn, utils.EchoMiddleware)
+		e.Router.POST("/v1/accounts/login", s.ServiceHandler.HandleLogIn, utils.EchoMiddleware)
 		return nil
 	})
 }
