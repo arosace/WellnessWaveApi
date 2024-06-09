@@ -53,3 +53,82 @@ The command will spin up two services:
 - the admin dashboard at localhost:8090/_/
 
 In order to access the admin dashboard you will need to register yourself.
+
+## API
+
+### Accounts Subdomain
+```
+name: accounts
+endpoint: /v1/accounts
+method: GET
+parameters: 
+
+name: register
+endpoint: /v1/accounts/register
+method: POST
+parameters: 
+
+name: verify
+endpoint: /v1/accounts/verify
+method: PUT
+parameters: 
+
+name: id
+endpoint: /v1/accounts/:id
+method: GET
+parameters:
+
+name: attach
+endpoint: /v1/accounts/attach
+method:  POST
+parameters:
+
+name: parent id
+endpoint: /v1/accounts/attached/:parent_id
+method: GET
+parameters:
+
+name: update
+endpoint: /v1/accounts/update
+method: PUT
+parameters:
+
+name: login
+endpoint: /v1/accounts/login
+method: POST
+parameters:
+```
+### Events Subdomain
+```
+name: events
+endpoint: /v1/events
+method: GET
+parameters:
+
+name: schedule
+endpoint: /v1/events/schedule
+method: POST
+parameters: 
+```
+### Planner Subdomain
+```
+name: add meal
+endpoint: /v1/planner/addMeal
+method: POST
+parameters:
+
+name: add meal plan
+endpoint: /v1/planner/addMealPlan
+method: POST
+parameters: 
+
+name: get meal
+endpoint: /v1/planner/getMeal
+method: GET
+parameters: 
+
+name: get meal plan
+endpoint: /v1/planner/getMealPlan
+method: GET
+parameters: 
+```
