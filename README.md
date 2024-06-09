@@ -61,58 +61,58 @@ handler.AccountHandler
 name: accounts
 endpoint: /v1/accounts
 method: GET
-parameters:
-handler: AccountHandler
-description: 
+parameters: None
+handler: HandleGetAccounts
+description: returns array of accounts using daos model query.
 
 name: register
 endpoint: /v1/accounts/register
 method: POST
-parameters:
+parameters: None
 handler: HandleAddAccount
-description: 
+description: adds account and returns json with account data (removes encrypted password)
 
 name: verify
 endpoint: /v1/accounts/verify
 method: PUT
-parameters:
+parameters: None
 handler: HandleVerifyAccount
-description: 
+description: verifies if user email exists in the database and provides simple 200 valid response if true.
 
 name: id
 endpoint: /v1/accounts/:id
 method: GET
-parameters:
+rqeuired parameters: id
 handler: HandleGetAccountsById
-description: 
+description: returns account information if it exists.
 
 name: attach
 endpoint: /v1/accounts/attach
 method:  POST
 parameters:
 handler: HandleAttachAccount
-description: 
+description: attaches account to parent id? creates account if email not found?
 
 name: parent id
 endpoint: /v1/accounts/attached/:parent_id
 method: GET
-parameters:
+required parameters: parent_id
 handler: HandleGetAttachedAccounts
-description: 
+description: returns record of parent id, if it exists.
 
 name: update
 endpoint: /v1/accounts/update
 method: PUT
-parameters:
+required parameters: infoType (only accepts 'personal' or 'authentication') 
 handler: HandleUpdateAccount
-description: 
+description: updates account information
 
 name: login
 endpoint: /v1/accounts/login
 method: POST
 parameters:
 handler: HandleLogIn
-description: 
+description: validates the account. 
 ```
 ### Events Subdomain
 ```
