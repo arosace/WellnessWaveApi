@@ -110,7 +110,7 @@ description: updates account information
 name: login
 endpoint: /v1/accounts/login
 method: POST
-parameters:
+parameters: None
 handler: HandleLogIn
 description: validates the account. 
 ```
@@ -119,22 +119,23 @@ description: validates the account.
 name: events
 endpoint: /v1/events
 method: GET
-parameters:
+required parameters: healthSpecialistId or healthSpecialistId (can only chooose one, else 400 error)
+optional parameters: after 
 handler: HandleGetEvents
-description:
+description: returns records of parient or specialist events. 'after' optional parameter provides a cutoff for event's date
 
 name: schedule
 endpoint: /v1/events/schedule
 method: POST
-parameters:
+parameters: None
 handler: HandleScheduleEvent
-description:
+description: schedules an event, returns scheduled event
 
 name: reschedule
 endpoint: v1/events/reschedule
-parameters:
+parameters: 
 handler: HandleRescheduleEvent
-description:
+description: reschedules event to next date.
 ```
 ### Planner Subdomain
 ```
@@ -143,26 +144,26 @@ endpoint: /v1/planner/addMeal
 method: POST
 parameters:
 handler: HandleAddMeal
-description:
+description: add meal to meals table, if it exists.
 
 name: add meal plan
 endpoint: /v1/planner/addMealPlan
 method: POST
 parameters:
 handler: HandleAddMealPlan
-description:
+description: wtf, ask angelo
 
 name: get meal
 endpoint: /v1/planner/getMeal
 method: GET
-parameters:
+required parameters: healthSpecialistId or mealId (can only chooose one, else 400 error)
 handler: HandleGetMeal
-description:
+description:  returns meal or list of meals depending on parameters
 
 name: get meal plan
 endpoint: /v1/planner/getMealPlan
 method: GET
-parameters:
+required parameters: healthSpecialistId or patientId (can only chooose one, else 400 error)
 handler: HandleGetMealPlan
-description: 
+description: returns meal plan or list of meals depending on parameters.
 ```
