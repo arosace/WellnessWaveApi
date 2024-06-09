@@ -55,48 +55,64 @@ The command will spin up two services:
 In order to access the admin dashboard you will need to register yourself.
 
 ## API
-
+handler.AccountHandler
 ### Accounts Subdomain
 ```
 name: accounts
 endpoint: /v1/accounts
 method: GET
-parameters: 
+parameters:
+handler: AccountHandler
+description: 
 
 name: register
 endpoint: /v1/accounts/register
 method: POST
-parameters: 
+parameters:
+handler: HandleAddAccount
+description: 
 
 name: verify
 endpoint: /v1/accounts/verify
 method: PUT
-parameters: 
+parameters:
+handler: HandleVerifyAccount
+description: 
 
 name: id
 endpoint: /v1/accounts/:id
 method: GET
 parameters:
+handler: HandleGetAccountsById
+description: 
 
 name: attach
 endpoint: /v1/accounts/attach
 method:  POST
 parameters:
+handler: HandleAttachAccount
+description: 
 
 name: parent id
 endpoint: /v1/accounts/attached/:parent_id
 method: GET
 parameters:
+handler: HandleGetAttachedAccounts
+description: 
 
 name: update
 endpoint: /v1/accounts/update
 method: PUT
 parameters:
+handler: HandleUpdateAccount
+description: 
 
 name: login
 endpoint: /v1/accounts/login
 method: POST
 parameters:
+handler: HandleLogIn
+description: 
 ```
 ### Events Subdomain
 ```
@@ -104,11 +120,21 @@ name: events
 endpoint: /v1/events
 method: GET
 parameters:
+handler: HandleGetEvents
+description:
 
 name: schedule
 endpoint: /v1/events/schedule
 method: POST
-parameters: 
+parameters:
+handler: HandleScheduleEvent
+description:
+
+name: reschedule
+endpoint: v1/events/reschedule
+parameters:
+handler: HandleRescheduleEvent
+description:
 ```
 ### Planner Subdomain
 ```
@@ -116,19 +142,27 @@ name: add meal
 endpoint: /v1/planner/addMeal
 method: POST
 parameters:
+handler: HandleAddMeal
+description:
 
 name: add meal plan
 endpoint: /v1/planner/addMealPlan
 method: POST
-parameters: 
+parameters:
+handler: HandleAddMealPlan
+description:
 
 name: get meal
 endpoint: /v1/planner/getMeal
 method: GET
-parameters: 
+parameters:
+handler: HandleGetMeal
+description:
 
 name: get meal plan
 endpoint: /v1/planner/getMealPlan
 method: GET
-parameters: 
+parameters:
+handler: HandleGetMealPlan
+description: 
 ```
