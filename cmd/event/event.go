@@ -27,17 +27,17 @@ func (s EventService) Init() {
 
 func (s EventService) RegisterEndpoints() {
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/api/events/schedule", s.ServiceHandler.HandleScheduleEvent, utils.EchoMiddleware)
+		e.Router.POST("/v1/events/schedule", s.ServiceHandler.HandleScheduleEvent, utils.EchoMiddleware)
 		return nil
 	})
 
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.PUT("/api/events/reschedule", s.ServiceHandler.HandleRescheduleEvent, utils.EchoMiddleware)
+		e.Router.PUT("/v1/events/reschedule", s.ServiceHandler.HandleRescheduleEvent, utils.EchoMiddleware)
 		return nil
 	})
 
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/api/events", s.ServiceHandler.HandleGetEvents, utils.EchoMiddleware)
+		e.Router.GET("/v1/events", s.ServiceHandler.HandleGetEvents, utils.EchoMiddleware)
 		return nil
 	})
 }
