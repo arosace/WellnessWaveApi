@@ -26,19 +26,19 @@ func (s PlannerService) Init() {
 
 func (s PlannerService) RegisterEndpoints() {
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/api/planner/addMeal", s.ServiceHandler.HandleAddMeal, utils.EchoMiddleware)
+		e.Router.POST("/v1/planner/addMeal", s.ServiceHandler.HandleAddMeal, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.POST("/api/planner/addMealPlan", s.ServiceHandler.HandleAddMealPlan, utils.EchoMiddleware)
+		e.Router.POST("/v1/planner/addMealPlan", s.ServiceHandler.HandleAddMealPlan, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/api/planner/getMeal", s.ServiceHandler.HandleGetMeal, utils.EchoMiddleware)
+		e.Router.GET("/v1/planner/getMeal", s.ServiceHandler.HandleGetMeal, utils.EchoMiddleware)
 		return nil
 	})
 	s.App.OnBeforeServe().Add(func(e *core.ServeEvent) error {
-		e.Router.GET("/api/planner/getMealPlan", s.ServiceHandler.HandleGetMealPlan, utils.EchoMiddleware)
+		e.Router.GET("/v1/planner/getMealPlan", s.ServiceHandler.HandleGetMealPlan, utils.EchoMiddleware)
 		return nil
 	})
 }
